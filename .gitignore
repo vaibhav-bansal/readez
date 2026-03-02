@@ -35,4 +35,4 @@ __pycache__/
 *.pyo
 
 # Storage
-backend/storage
+# backend/storage

@@ -32,14 +32,15 @@ class Settings(BaseSettings):
     dodo_test_webhook_secret: Optional[str] = None
     dodo_test_pro_product_id: Optional[str] = None
     dodo_test_plus_product_id: Optional[str] = None
+    dodo_test_subscription_webhook_secret: Optional[str] = None
+    dodo_test_payment_webhook_secret: Optional[str] = None
+    dodo_test_refund_webhook_secret: Optional[str] = None
 
     # Dodo Payments - Live
     dodo_api_key: Optional[str] = None
     dodo_webhook_secret: Optional[str] = None
     dodo_pro_product_id: Optional[str] = None
     dodo_plus_product_id: Optional[str] = None
-
-    # Dodo Payments - Additional webhook secrets
     dodo_subscription_webhook_secret: Optional[str] = None
     dodo_payment_webhook_secret: Optional[str] = None
     dodo_refund_webhook_secret: Optional[str] = None

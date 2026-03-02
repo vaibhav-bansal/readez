@@ -54,6 +54,8 @@ class Payment(Base):
     amount = Column(BigInteger, nullable=False)  # In cents
     currency = Column(String(10), default="USD", nullable=False)
     status = Column(String(20), nullable=False)  # succeeded, failed, refunded
+    refund_amount = Column(BigInteger, nullable=True)  # In cents
+    refunded_at = Column(DateTime, nullable=True)
     paid_at = Column(DateTime, nullable=True)
     webhook_data = Column(String, nullable=True)  # JSON string of full Dodo payload
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

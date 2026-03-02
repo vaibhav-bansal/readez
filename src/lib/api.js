@@ -3,7 +3,9 @@
  * Replaces Supabase client for all backend operations.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use relative paths for same-origin deployment (production)
+// Fall back to localhost for local development
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 /**
  * Make an authenticated API request.

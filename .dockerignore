@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+backend/.venv
+backend/venv
+__pycache__
+
+# Build outputs (we build in the Dockerfile)
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (should be set in Railway)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Test files
+coverage
+.nyc_output
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Railway
+railway.toml
+
+# Misc
+.claude
+*.log
