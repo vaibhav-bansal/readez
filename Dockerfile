@@ -3,6 +3,9 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
+# Install Python for native module compilation (pdfjs-dist needs it)
+RUN apk add --no-cache python3
+
 # Copy package files
 COPY package.json package-lock.json* ./
 
