@@ -1,9 +1,9 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app.config import get_settings
 from app.database import init_db
@@ -45,7 +45,7 @@ app.add_middleware(
 )
 
 
-# Health check
+# Health check - defined first to ensure priority
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "environment": settings.environment}
@@ -70,11 +70,21 @@ if STATIC_DIR.exists():
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
     # Catch-all route for SPA - serve index.html for non-API routes
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # Skip if it's an API route (should have been caught by routers above)
-        # This catch-all only handles frontend routes
-        index_path = STATIC_DIR / "index.html"
-        if index_path.exists():
-            return FileResponse(str(index_path))
-        return {"error": "Not found"}
+    # Using middleware approach to avoid route conflicts
+    @app.middleware("http")
+    async def spa_middleware(request: Request, call_next):
+        # First, try the normal routing
+        response = await call_next(request)
+
+        # If the response is 404 and it's not an API route, serve the SPA
+        if response.status_code == 404:
+            path = request.url.path
+
+            # Skip API routes and health check
+            api_prefixes = ["/health", "/auth", "/books", "/progress", "/subscription", "/payments", "/feedback", "/webhooks", "/assets"]
+            if not any(path.startswith(prefix) for prefix in api_prefixes):
+                index_path = STATIC_DIR / "index.html"
+                if index_path.exists():
+                    return FileResponse(str(index_path))
+
+        return response
