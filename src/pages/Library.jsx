@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDropzone } from 'react-dropzone'
-import { supabase } from '../lib/supabase'
+import api from '../lib/api'
 import toast from 'react-hot-toast'
 import { useNavigate, Link } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -22,160 +22,89 @@ function Library() {
   const [deleteConfirmation, setDeleteConfirmation] = useState(null) // { bookId, title }
   const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false)
 
-  // Get current user for subscription data
+  // Get current user
   const { data: userData } = useQuery({
     queryKey: ['user'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      return user
+      try {
+        const user = await api.auth.getCurrentUser()
+        return user
+      } catch {
+        return null
+      }
     },
   })
 
   // Get user subscription status
   const { tier, isLoading: subscriptionLoading } = useSubscription(userData?.id)
 
-  const { data: books, isLoading, error: booksError, refetch } = useQuery({
+  // Fetch books with progress
+  const { data: booksData, isLoading, error: booksError, refetch } = useQuery({
     queryKey: ['books'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return []
-
-      // Fetch books
-      const { data: booksData, error: booksError } = await supabase
-        .from('books')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (booksError) throw booksError
-      if (!booksData || booksData.length === 0) return []
-
-      // Fetch reading progress for all books
-      const bookIds = booksData.map(b => b.id)
-      const { data: progressData, error: progressError } = await supabase
-        .from('reading_progress')
-        .select('book_id, current_page, last_read_at, zoom_level')
-        .eq('user_id', user.id)
-        .in('book_id', bookIds)
-
-      if (progressError) throw progressError
-      
-      // Create a map of book_id -> progress
-      const progressMap = {}
-      if (progressData) {
-        progressData.forEach(progress => {
-          progressMap[progress.book_id] = {
-            current_page: progress.current_page,
-            last_read_at: progress.last_read_at,
-            zoom_level: progress.zoom_level
-          }
-        })
-      }
-      
-      // Merge books with their progress
-      const booksWithProgress = booksData.map(book => ({
-        ...book,
-        current_page: progressMap[book.id]?.current_page || null,
-        last_read_at: progressMap[book.id]?.last_read_at || null,
-        zoom_level: progressMap[book.id]?.zoom_level || null
-      }))
-      
-      return booksWithProgress
+      const data = await api.books.list()
+      return data.books || []
     },
     retry: 2,
   })
 
-  // Generate signed URLs for book thumbnails (only if thumbnail_path exists)
-  const { data: coverUrlMap, isLoading: coverUrlsLoading } = useQuery({
-    queryKey: ['coverUrls', books],
+  // Fetch reading progress for all books
+  const { data: progressData } = useQuery({
+    queryKey: ['progress'],
     queryFn: async () => {
-      if (!books?.length) return {}
-      
+      const data = await api.progress.list()
+      return data.progress || []
+    },
+    enabled: !!userData?.id,
+  })
+
+  // Merge books with progress
+  const books = booksData?.map(book => {
+    const progress = progressData?.find(p => p.book_id === book.id)
+    return {
+      ...book,
+      current_page: progress?.current_page || null,
+      last_read_at: progress?.last_read_at || null,
+      zoom_level: progress?.zoom_level || null,
+    }
+  }) || []
+
+  // Generate thumbnail URLs for books
+  const { data: coverUrlMap, isLoading: coverUrlsLoading } = useQuery({
+    queryKey: ['coverUrls', booksData],
+    queryFn: async () => {
+      if (!booksData?.length) return {}
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const urlMap = {}
-      await Promise.all(
-        books.map(async (book) => {
-          // Only fetch thumbnail if it exists
-          if (!book.thumbnail_path) return
-          
-          try {
-            // Try to create signed URL (for private buckets)
-            const { data, error } = await supabase.storage
-              .from('books')
-              .createSignedUrl(book.thumbnail_path, 3600) // 1 hour expiry
-            
-            if (error) {
-              // Fallback to public URL if signed URL fails
-              const publicUrl = supabase.storage
-                .from('books')
-                .getPublicUrl(book.thumbnail_path).data.publicUrl
-              urlMap[book.id] = publicUrl
-            } else {
-              urlMap[book.id] = data.signedUrl
-            }
-          } catch (error) {
-            // Fallback to public URL on error
-            const publicUrl = supabase.storage
-              .from('books')
-              .getPublicUrl(book.thumbnail_path).data.publicUrl
-            urlMap[book.id] = publicUrl
-          }
-        })
-      )
+      booksData.forEach((book) => {
+        // Use thumbnail_url from API response if available
+        if (book.thumbnail_url) {
+          urlMap[book.id] = `${apiUrl}${book.thumbnail_url}`
+        }
+      })
       return urlMap
     },
-    enabled: !!books?.length,
+    enabled: !!booksData?.length,
     retry: 2,
   })
 
   // Delete book mutation
   const deleteBookMutation = useMutation({
     mutationFn: async (bookId) => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      // Get book to find file paths
-      const { data: book } = await supabase
-        .from('books')
-        .select('file_path, thumbnail_path, title, file_size, total_pages')
-        .eq('id', bookId)
-        .eq('user_id', user.id)
-        .single()
-
-      if (!book) throw new Error('Book not found')
-
-      // Delete files from storage (PDF and thumbnail if exists)
-      const filesToDelete = [book.file_path]
-      if (book.thumbnail_path) {
-        filesToDelete.push(book.thumbnail_path)
-      }
-
-      const { error: storageError } = await supabase.storage
-        .from('books')
-        .remove(filesToDelete)
-
-      if (storageError) throw storageError
-
-      // Delete book record (this will cascade delete reading_progress)
-      const { error: dbError } = await supabase
-        .from('books')
-        .delete()
-        .eq('id', bookId)
-        .eq('user_id', user.id)
-
-      if (dbError) throw dbError
-
-      // Return book data for tracking
+      const book = booksData?.find(b => b.id === bookId)
+      await api.books.delete(bookId)
       return book
     },
     onSuccess: (book) => {
       queryClient.invalidateQueries({ queryKey: ['books'] })
-      queryClient.invalidateQueries({ queryKey: ['coverUrls'] })
+      queryClient.invalidateQueries({ queryKey: ['progress'] })
       toast.success('Book deleted successfully')
       setDeleteConfirmation(null)
-      
+
       trackEvent('book_deleted', {
-        book_id: book.id,
-        file_size: book.file_size,
+        book_id: book?.id,
+        file_size: book?.file_size,
       })
     },
     onError: (error, bookId) => {
@@ -244,72 +173,26 @@ function Library() {
 
     // Track upload start
     trackEvent('book_upload_started', {
-      file_size: pdfFile.size, // file_type is always PDF, file_name can be sensitive
+      file_size: pdfFile.size,
     })
 
     setUploading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        trackEvent('book_upload_failed', {
-          reason: 'not_authenticated',
-        })
-        toast.error('Please sign in to upload books')
-        return
-      }
+      // Upload via API (backend handles storage)
+      const bookData = await api.books.upload(pdfFile)
 
-      // Upload file to Supabase Storage
-      const fileExt = pdfFile.name.split('.').pop()
-      const timestamp = Date.now()
-      const fileName = `${user.id}/${timestamp}.${fileExt}`
-      
-      const { error: uploadError } = await supabase.storage
-        .from('books')
-        .upload(fileName, pdfFile)
-
-      if (uploadError) throw uploadError
-
-      // Generate and upload thumbnail
-      let thumbnailPath = null
+      // Try to generate and upload thumbnail
+      // Note: For now, thumbnail generation happens client-side
+      // In future, this could be moved to backend
       let thumbnailGenerated = false
       try {
         const thumbnailBlob = await generateThumbnail(pdfFile)
-        const thumbnailFileName = `${user.id}/${timestamp}_thumb.jpg`
-        
-        const { error: thumbnailUploadError } = await supabase.storage
-          .from('books')
-          .upload(thumbnailFileName, thumbnailBlob, {
-            contentType: 'image/jpeg',
-          })
-
-        if (thumbnailUploadError) {
-          console.warn('Thumbnail generation failed:', thumbnailUploadError)
-          // Continue without thumbnail - not critical
-        } else {
-          thumbnailPath = thumbnailFileName
-          thumbnailGenerated = true
-        }
+        // TODO: Add thumbnail upload endpoint to backend
+        // For now, thumbnail is generated when PDF is first opened
+        thumbnailGenerated = true
       } catch (thumbnailError) {
         console.warn('Thumbnail generation error:', thumbnailError)
-        // Continue without thumbnail - not critical
       }
-
-      // Create book record (total_pages will be set when PDF is first opened)
-      const { data: bookData, error: dbError } = await supabase
-        .from('books')
-        .insert({
-          user_id: user.id,
-          title: pdfFile.name.replace(/\.[^/.]+$/, ''),
-          file_name: pdfFile.name,
-          file_path: fileName,
-          file_size: pdfFile.size,
-          thumbnail_path: thumbnailPath,
-          total_pages: null, // Will be updated when PDF is first loaded
-        })
-        .select()
-        .single()
-
-      if (dbError) throw dbError
 
       // Track successful upload
       trackEvent('book_uploaded', {
@@ -352,7 +235,7 @@ function Library() {
           <h1 className="text-3xl font-bold">My Library</h1>
           {!subscriptionLoading && <SubscriptionBadge tier={tier} />}
         </div>
-        
+
         {/* Upload area */}
         <div
           {...getRootProps()}
@@ -391,7 +274,7 @@ function Library() {
                 <div className="w-full h-3/4 overflow-hidden">
                   <BookCoverSkeleton className="w-full h-full" />
                 </div>
-                
+
                 {/* Skeleton Info */}
                 <div className="p-3 h-1/4 flex flex-col justify-between bg-white">
                   <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
@@ -408,24 +291,24 @@ function Library() {
               const sortedBooks = [...(books || [])]
               sortedBooks.sort((a, b) => {
                 // Get the most recent date for each book
-                const aMostRecent = a.last_read_at 
+                const aMostRecent = a.last_read_at
                   ? Math.max(new Date(a.created_at), new Date(a.last_read_at))
                   : new Date(a.created_at)
-                
+
                 const bMostRecent = b.last_read_at
                   ? Math.max(new Date(b.created_at), new Date(b.last_read_at))
                   : new Date(b.created_at)
-                
+
                 // Sort by most recent date in descending order (newest first)
                 return bMostRecent - aMostRecent
               })
               return sortedBooks
             })().map((book) => {
-                const coverUrl = coverUrlMap?.[book.id] || null
-                const lastReadAt = book.last_read_at
-                // Show skeleton for cover if URL is not yet loaded (only if thumbnail exists)
-                const isCoverLoading = book.thumbnail_path && !coverUrl
-              
+              const coverUrl = coverUrlMap?.[book.id] || null
+              const lastReadAt = book.last_read_at
+              // Show skeleton for cover if URL is not yet loaded (only if thumbnail exists)
+              const isCoverLoading = book.thumbnail_url && !coverUrl
+
               return (
                 <div
                   key={book.id}
@@ -449,11 +332,11 @@ function Library() {
                       className="absolute top-2 right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all duration-200"
                       title="Delete book"
                     >
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-4 w-4" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -466,7 +349,7 @@ function Library() {
                     {isCoverLoading ? (
                       <BookCoverSkeleton className="w-full h-full" />
                     ) : (
-                      <BookCover 
+                      <BookCover
                         coverUrl={coverUrl}
                         title={book.title}
                         className="w-full h-full"
@@ -523,21 +406,21 @@ function Library() {
       {deleteConfirmation && (
         <>
           {/* Backdrop overlay - darkens and blurs the background */}
-          <div 
+          <div
             className="fixed inset-0 z-40 transition-opacity duration-200"
             onClick={handleDeleteCancel}
-            style={{ 
+            style={{
               backgroundColor: 'rgba(0, 0, 0, 0.15)',
               backdropFilter: 'blur(2px)',
               WebkitBackdropFilter: 'blur(2px)',
-              animation: 'fadeIn 0.2s ease-in-out' 
+              animation: 'fadeIn 0.2s ease-in-out'
             }}
             aria-hidden="true"
           />
-          
+
           {/* Dialog */}
           <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-            <div 
+            <div
               className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 pointer-events-auto transform transition-all duration-200"
               onClick={(e) => e.stopPropagation()}
               style={{ animation: 'fadeInScale 0.2s ease-in-out' }}
@@ -545,7 +428,7 @@ function Library() {
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4 text-gray-900">Delete Book</h3>
                 <p className="text-gray-700 mb-6">
-                  Are you sure you want to delete <span className="font-semibold">"{deleteConfirmation.title}"</span>? 
+                  Are you sure you want to delete <span className="font-semibold">"{deleteConfirmation.title}"</span>?
                   This action cannot be undone.
                 </p>
                 <div className="flex justify-end gap-3">

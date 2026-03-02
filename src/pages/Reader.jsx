@@ -6,7 +6,7 @@ import { pdfWorkerSrc } from '../lib/pdfWorker'
 import { Document, Page, pdfjs } from 'react-pdf'
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
-import { supabase } from '../lib/supabase'
+import api from '../lib/api'
 import toast from 'react-hot-toast'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -19,11 +19,7 @@ function Reader() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [numPages, setNumPages] = useState(null)
-  // Initialize currentPage from readingProgress if available, otherwise default to 1
-  const [currentPage, setCurrentPage] = useState(() => {
-    // This will be set properly when readingProgress loads
-    return 1
-  })
+  const [currentPage, setCurrentPage] = useState(1)
   const [scale, setScale] = useState(1.5)
   const [isCalculatingZoom, setIsCalculatingZoom] = useState(true)
   const [showPageJumpModal, setShowPageJumpModal] = useState(false)
@@ -103,18 +99,7 @@ function Reader() {
   const { data: book, isLoading: bookLoading, error: bookError } = useQuery({
     queryKey: ['book', bookId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      const { data, error } = await supabase
-        .from('books')
-        .select('*')
-        .eq('id', bookId)
-        .eq('user_id', user.id)
-        .single()
-
-      if (error) throw error
-      return data
+      return await api.books.get(bookId)
     },
     enabled: !!bookId,
     retry: 2,
@@ -127,22 +112,67 @@ function Reader() {
     }
   }, [bookError])
 
-  // Get PDF URL from Supabase Storage
-  const { data: pdfUrl, error: pdfUrlError, isLoading: pdfUrlLoading } = useQuery({
-    queryKey: ['pdfUrl', book?.file_path],
+  // Get PDF signed URL
+  const { data: signedUrlData, error: pdfUrlError, isLoading: pdfUrlLoading } = useQuery({
+    queryKey: ['pdfUrl', book?.id],
     queryFn: async () => {
-      if (!book?.file_path) return null
-      
-      const { data, error } = await supabase.storage
-        .from('books')
-        .createSignedUrl(book.file_path, 3600) // 1 hour expiry
-      
-      if (error) throw error
-      return data.signedUrl
+      if (!book?.id) return null
+      return await api.books.getSignedUrl(book.id)
     },
-    enabled: !!book?.file_path,
+    enabled: !!book?.id,
     retry: 2,
   })
+
+  // Fetch PDF as base64-encoded JSON, then convert to blob URL
+  // This bypasses IDM which intercepts direct file downloads
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null)
+  const [pdfLoadError, setPdfLoadError] = useState(null)
+
+  useEffect(() => {
+    if (!signedUrlData?.signed_url) {
+      setPdfBlobUrl(null)
+      return
+    }
+
+    // Convert /file endpoint to /data endpoint
+    const dataUrl = signedUrlData.signed_url.replace('/file?', '/data?')
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const fullUrl = `${apiUrl}${dataUrl}`
+
+    let objectUrl = null
+    fetch(fullUrl, { credentials: 'include' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        return response.json()
+      })
+      .then(data => {
+        // Decode base64 to binary
+        const binaryString = atob(data.data)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        // Create blob from binary data
+        const blob = new Blob([bytes], { type: data.mime_type || 'application/pdf' })
+        objectUrl = URL.createObjectURL(blob)
+        setPdfBlobUrl(objectUrl)
+        setPdfLoadError(null)
+      })
+      .catch(error => {
+        console.error('PDF fetch error:', error)
+        setPdfLoadError(error)
+        setPdfBlobUrl(null)
+      })
+
+    // Cleanup blob URL on unmount or when URL changes
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [signedUrlData])
 
   useEffect(() => {
     if (pdfUrlError) {
@@ -151,43 +181,47 @@ function Reader() {
     }
   }, [pdfUrlError])
 
+  useEffect(() => {
+    if (pdfLoadError) {
+      console.error('PDF load error:', pdfLoadError)
+      toast.error(`Failed to load PDF file: ${pdfLoadError.message || 'Unknown error'}`)
+    }
+  }, [pdfLoadError])
+
   // Fetch reading progress
   const { data: readingProgress, isLoading: readingProgressLoading } = useQuery({
     queryKey: ['readingProgress', bookId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return null
-
-      const { data, error } = await supabase
-        .from('reading_progress')
-        .select('*')
-        .eq('book_id', bookId)
-        .eq('user_id', user.id)
-        .single()
-
-      if (error && error.code !== 'PGRST116') throw error // PGRST116 = not found
-      console.log('Reading progress fetched:', data)
-      return data
+      try {
+        return await api.progress.get(bookId)
+      } catch (error) {
+        // Not found is okay - means no progress yet
+        if (error.message?.includes('not found')) {
+          return null
+        }
+        throw error
+      }
     },
     enabled: !!bookId,
-    staleTime: 0, // Always refetch to get latest progress
-    cacheTime: 0, // Don't cache, always get fresh data
+    staleTime: 0,
+    gcTime: 0,
   })
 
   // Restore saved zoom level when reading progress loads
   useEffect(() => {
     if (readingProgress?.zoom_level && isCalculatingZoom) {
-      setScale(readingProgress.zoom_level)
+      // Handle both percentage (150) and float (1.5) formats
+      const zoomValue = readingProgress.zoom_level
+      const restoredScale = zoomValue > 10 ? zoomValue / 100 : zoomValue
+      setScale(restoredScale)
       setIsCalculatingZoom(false)
     }
   }, [readingProgress?.zoom_level, isCalculatingZoom])
 
-  // Restore page when readingProgress loads (before document loads)
+  // Restore page when readingProgress loads
   useEffect(() => {
     if (readingProgress?.current_page && !hasRestoredRef.current && !numPages) {
-      // Document hasn't loaded yet, but we have progress - set it as initial page
-      // Will be validated when document loads
-      console.log('Setting initial page from readingProgress (before document load):', readingProgress.current_page)
+      console.log('Setting initial page from readingProgress:', readingProgress.current_page)
       setCurrentPage(readingProgress.current_page)
     }
   }, [readingProgress?.current_page, numPages])
@@ -195,107 +229,22 @@ function Reader() {
   // Sync progress mutation
   const syncProgressMutation = useMutation({
     mutationFn: async ({ page, zoomLevel }) => {
-      console.log('🔄 syncProgressMutation.mutationFn called with:', { page, zoomLevel, bookId })
-      
-      // Check authentication and session
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      console.log('🔐 Auth check:', { 
-        user: user?.id, 
-        authError, 
-        hasSession: !!session,
-        sessionError 
-      })
-      
-      if (authError) {
-        console.error('❌ Auth error:', authError)
-        throw new Error('Authentication error: ' + authError.message)
-      }
-      if (!user) {
-        console.error('❌ No user found')
-        throw new Error('Not authenticated')
-      }
-      if (!session) {
-        console.error('❌ No active session')
-        throw new Error('No active session - user may need to re-authenticate')
-      }
+      console.log('Syncing progress:', { page, zoomLevel, bookId })
 
-      console.log('✅ User authenticated:', user.id)
-      console.log('✅ Session active:', session.access_token ? 'Yes' : 'No')
-
-      const progressData = {
-        user_id: user.id,
-        book_id: bookId,
+      const updateData = {
         current_page: page,
         last_read_at: new Date().toISOString(),
-        ...(zoomLevel !== undefined && { zoom_level: zoomLevel }),
       }
 
-      console.log('📤 Upserting progress data to Supabase:', progressData)
-      console.log('📤 Supabase client:', supabase)
-      console.log('📤 Table: reading_progress')
-
-      // First, try to check if a record exists
-      const { data: existingData, error: checkError } = await supabase
-        .from('reading_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('book_id', bookId)
-        .single()
-
-      console.log('🔍 Existing record check:', { existingData, checkError })
-
-      // Use upsert with conflict resolution
-      // Supabase uses the unique constraint (user_id, book_id) for conflict resolution
-      const { data, error } = await supabase
-        .from('reading_progress')
-        .upsert(progressData, {
-          onConflict: 'user_id,book_id',
-        })
-        .select()
-
-      console.log('📥 Upsert response:', { data, error })
-
-      if (error) {
-        console.error('❌ Database upsert error:', error)
-        console.error('Error code:', error.code)
-        console.error('Error message:', error.message)
-        console.error('Error details:', JSON.stringify(error, null, 2))
-        console.error('Error hint:', error.hint)
-        
-        // If upsert fails, try update as fallback
-        console.log('🔄 Trying update as fallback')
-        const { data: updateData, error: updateError } = await supabase
-          .from('reading_progress')
-          .update({
-            current_page: page,
-            last_read_at: new Date().toISOString(),
-            ...(zoomLevel !== undefined && { zoom_level: zoomLevel }),
-          })
-          .eq('user_id', user.id)
-          .eq('book_id', bookId)
-          .select()
-
-        console.log('📥 Update response:', { updateData, updateError })
-
-        if (updateError) {
-          console.error('❌ Update error:', updateError)
-          console.error('Update error code:', updateError.code)
-          console.error('Update error message:', updateError.message)
-          console.error('Update error details:', JSON.stringify(updateError, null, 2))
-          throw updateError
-        }
-        console.log('✅ Progress updated successfully (fallback):', updateData)
-        return updateData
+      if (zoomLevel !== undefined) {
+        updateData.zoom_level = zoomLevel
       }
 
-      console.log('✅ Progress upserted successfully:', data)
-      return data
+      return await api.progress.update(bookId, updateData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['readingProgress', bookId] })
-      queryClient.invalidateQueries({ queryKey: ['books'] }) // Also invalidate books to refresh library
+      queryClient.invalidateQueries({ queryKey: ['progress'] })
     },
     onError: (error) => {
       console.error('Progress sync error:', error)
@@ -306,24 +255,16 @@ function Reader() {
   // Save zoom level mutation (debounced)
   const saveZoomMutation = useMutation({
     mutationFn: async (zoomLevel) => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      const progressData = {
-        user_id: user.id,
-        book_id: bookId,
+      const updateData = {
         zoom_level: zoomLevel,
-        ...(readingProgress?.current_page && { current_page: readingProgress.current_page }),
         last_read_at: new Date().toISOString(),
       }
 
-      const { error } = await supabase
-        .from('reading_progress')
-        .upsert(progressData, {
-          onConflict: 'user_id,book_id',
-        })
+      if (readingProgress?.current_page) {
+        updateData.current_page = readingProgress.current_page
+      }
 
-      if (error) throw error
+      return await api.progress.update(bookId, updateData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['readingProgress', bookId] })
@@ -334,80 +275,57 @@ function Reader() {
     retry: 1,
   })
 
-  // Update total pages in book record when PDF loads
-  const updateTotalPagesMutation = useMutation({
-    mutationFn: async (totalPages) => {
-      if (!book?.total_pages) {
-        const { error } = await supabase
-          .from('books')
-          .update({ total_pages: totalPages })
-          .eq('id', bookId)
-
-        if (error) throw error
-        queryClient.invalidateQueries({ queryKey: ['book', bookId] })
-      }
-    },
-  })
-
   const hasRestoredRef = useRef(false)
   const progressSyncTimeoutRef = useRef(null)
-  const pendingSaveRef = useRef(null) // Track pending save to prevent duplicate saves
+  const pendingSaveRef = useRef(null)
 
   // Reset restoration ref when bookId changes
   useEffect(() => {
     hasRestoredRef.current = false
-    lastSavedPageRef.current = null // Reset saved page ref
-    pendingSaveRef.current = null // Reset pending save ref
-    setCurrentPage(1) // Reset to page 1, will be restored if progress exists
+    lastSavedPageRef.current = null
+    pendingSaveRef.current = null
+    setCurrentPage(1)
   }, [bookId])
 
   const onDocumentLoadSuccess = ({ numPages: totalPages }) => {
     setNumPages(totalPages)
-    updateTotalPagesMutation.mutate(totalPages)
-    
+
     // Track PDF loaded
     trackEvent('pdf_loaded', {
       book_id: bookId,
       total_pages: totalPages,
       has_saved_progress: !!readingProgress?.current_page,
     })
-    
-    // Restore reading position if available (only once)
+
+    // Restore reading position if available
     if (readingProgress?.current_page && !hasRestoredRef.current) {
       const targetPage = Math.min(Math.max(1, readingProgress.current_page), totalPages)
-      console.log('Restoring to page from onDocumentLoadSuccess:', targetPage)
+      console.log('Restoring to page:', targetPage)
       setCurrentPage(targetPage)
-      // Don't set lastSavedPageRef here - let the save useEffect handle it after restoration
       hasRestoredRef.current = true
     } else if (!readingProgress?.current_page && !hasRestoredRef.current) {
-      // No saved progress, start at page 1
       hasRestoredRef.current = true
-      // Set lastSavedPageRef to 1 so we don't try to save page 1 on initial load
       lastSavedPageRef.current = 1
     }
   }
 
   // Handle restoration when readingProgress loads after document
-  // Only restore once when both numPages and readingProgress are available
   useEffect(() => {
     if (numPages && readingProgress?.current_page && !hasRestoredRef.current) {
       const targetPage = Math.min(Math.max(1, readingProgress.current_page), numPages)
-      console.log('Restoring to page from useEffect:', targetPage, { numPages, savedPage: readingProgress.current_page })
+      console.log('Restoring to page from useEffect:', targetPage)
       setCurrentPage(targetPage)
-      // Don't set lastSavedPageRef here - let the save useEffect handle it after restoration
       hasRestoredRef.current = true
     } else if (numPages && !readingProgress?.current_page && !hasRestoredRef.current) {
-      // No saved progress, ensure we're on page 1
       console.log('No saved progress, starting at page 1')
       setCurrentPage(1)
-      lastSavedPageRef.current = 1 // Set to 1 so we don't try to save on initial load
+      lastSavedPageRef.current = 1
       hasRestoredRef.current = true
     }
   }, [numPages, readingProgress?.current_page])
 
   // Handle page load success - calculate fit-to-height zoom
   const onPageLoadSuccess = (pageNum) => {
-    // Calculate fit-to-height zoom from first page if we don't have a saved zoom
     if (pageNum === 1 && isCalculatingZoom && !readingProgress?.zoom_level) {
       setTimeout(() => {
         try {
@@ -418,11 +336,11 @@ function Reader() {
               const renderedHeight = canvas.offsetHeight
               const pageHeightAtScale1 = renderedHeight / scale
               pageHeightRef.current = pageHeightAtScale1
-              
+
               const headerHeight = 80
               const padding = 32
               const availableHeight = window.innerHeight - headerHeight - padding
-              
+
               const fitToHeightScale = availableHeight / pageHeightAtScale1
               setScale(fitToHeightScale)
               setIsCalculatingZoom(false)
@@ -444,7 +362,6 @@ function Reader() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't handle if user is typing in an input
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         return
       }
@@ -505,24 +422,20 @@ function Reader() {
           break
         case 'g':
         case 'G':
-          // Go to page (g key)
           if (!e.ctrlKey && !e.metaKey) {
             e.preventDefault()
-              trackEvent('page_jump_modal_opened', {
-                book_id: bookId,
-                method: 'keyboard_g',
-              })
+            trackEvent('page_jump_modal_opened', {
+              book_id: bookId,
+              method: 'keyboard_g',
+            })
             setShowPageJumpModal(true)
           }
           break
         default:
-          // Number keys for quick page jump
           if (e.key >= '0' && e.key <= '9' && !e.ctrlKey && !e.metaKey) {
             if (showPageJumpModal) {
-              // If modal is open, append to input
               setPageJumpInput(prev => prev + e.key)
             } else {
-              // Quick jump: open modal with the digit
               setPageJumpInput(e.key)
               setShowPageJumpModal(true)
             }
@@ -548,15 +461,13 @@ function Reader() {
         x: e.changedTouches[0].clientX,
         y: e.changedTouches[0].clientY,
       }
-      
+
       const deltaX = touchEndRef.current.x - touchStartRef.current.x
       const deltaY = touchEndRef.current.y - touchStartRef.current.y
       const minSwipeDistance = 50
 
-      // Horizontal swipe (left/right)
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
         if (deltaX > 0 && currentPage > 1) {
-          // Swipe right = previous page
           trackEvent('page_navigated', {
             book_id: bookId,
             page: currentPage - 1,
@@ -564,7 +475,6 @@ function Reader() {
           })
           setCurrentPage(prev => prev - 1)
         } else if (deltaX < 0 && currentPage < numPages) {
-          // Swipe left = next page
           trackEvent('page_navigated', {
             book_id: bookId,
             page: currentPage + 1,
@@ -573,10 +483,8 @@ function Reader() {
           setCurrentPage(prev => prev + 1)
         }
       }
-      // Vertical swipe (up/down)
       else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
         if (deltaY > 0 && currentPage > 1) {
-          // Swipe down = previous page
           trackEvent('page_navigated', {
             book_id: bookId,
             page: currentPage - 1,
@@ -584,7 +492,6 @@ function Reader() {
           })
           setCurrentPage(prev => prev - 1)
         } else if (deltaY < 0 && currentPage < numPages) {
-          // Swipe up = next page
           trackEvent('page_navigated', {
             book_id: bookId,
             page: currentPage + 1,
@@ -608,92 +515,47 @@ function Reader() {
 
   // Save progress when page changes
   useEffect(() => {
-    console.log('Save progress useEffect triggered:', {
-      currentPage,
-      numPages,
-      lastSaved: lastSavedPageRef.current,
-      hasRestored: hasRestoredRef.current,
-      bookId
-    })
-
-    // Only save if page actually changed and we have valid data
-    // Skip if we're still restoring (hasRestoredRef is false means restoration hasn't completed)
-    // Also skip if we already have a pending save for this page
-    const shouldSave = currentPage && 
-                      numPages && 
-                      currentPage !== lastSavedPageRef.current && 
+    const shouldSave = currentPage &&
+                      numPages &&
+                      currentPage !== lastSavedPageRef.current &&
                       currentPage !== pendingSaveRef.current &&
                       hasRestoredRef.current
-    
+
     if (shouldSave) {
-      console.log('✅ Page changed, preparing to save:', { 
-        currentPage, 
-        lastSaved: lastSavedPageRef.current, 
-        pending: pendingSaveRef.current,
-        numPages,
-        bookId 
-      })
-      
-      // Mark this page as pending save
       pendingSaveRef.current = currentPage
-      
-      // Update local state immediately
       setProgress(bookId, currentPage)
-      
-      // Clear any pending timeout
+
       if (progressSyncTimeoutRef.current) {
         clearTimeout(progressSyncTimeoutRef.current)
         progressSyncTimeoutRef.current = null
       }
-      
-      // Debounce sync to database - only update lastSavedPageRef AFTER save completes
-      // Reduced timeout to 500ms for faster testing
+
       progressSyncTimeoutRef.current = setTimeout(() => {
-        console.log('💾 TIMEOUT FIRED - Saving progress to database:', { page: currentPage, zoomLevel: scale, bookId })
-        
         syncProgressMutation.mutate(
-          { page: currentPage, zoomLevel: scale },
+          { page: currentPage, zoomLevel: Math.round(scale * 100) }, // Convert scale to percentage
           {
-            onSuccess: (data) => {
-              console.log('✅ Progress saved successfully to database:', data)
-              // Track progress saved
+            onSuccess: () => {
               trackEvent('reading_progress_saved', {
                 book_id: bookId,
                 page: currentPage,
                 zoom_level: scale,
                 progress_percentage: numPages ? Math.round((currentPage / numPages) * 100) : null,
               })
-              // Mark as saved after successful save
               lastSavedPageRef.current = currentPage
               pendingSaveRef.current = null
               progressSyncTimeoutRef.current = null
             },
             onError: (error) => {
-              console.error('❌ Failed to save progress:', error)
-              console.error('Error details:', JSON.stringify(error, null, 2))
-              console.error('Error stack:', error.stack)
+              console.error('Failed to save progress:', error)
               toast.error('Failed to save reading progress: ' + (error.message || 'Unknown error'))
-              // Clear pending save on error, so it will retry on next change
               pendingSaveRef.current = null
               progressSyncTimeoutRef.current = null
             }
           }
         )
-      }, 500) // Reduced from 1000ms to 500ms for faster testing
-    } else {
-      const reason = !currentPage ? 'no currentPage' : 
-                    !numPages ? 'no numPages' : 
-                    currentPage === lastSavedPageRef.current ? 'page unchanged' :
-                    !hasRestoredRef.current ? 'restoration not complete' : 'unknown'
-      console.log('⏭️ Skipping save:', { 
-        currentPage, 
-        numPages, 
-        lastSaved: lastSavedPageRef.current,
-        hasRestored: hasRestoredRef.current,
-        reason
-      })
+      }, 500)
     }
-    
+
     return () => {
       if (progressSyncTimeoutRef.current) {
         clearTimeout(progressSyncTimeoutRef.current)
@@ -702,12 +564,7 @@ function Reader() {
     }
   }, [currentPage, numPages, bookId, scale])
 
-  // Show loading screen only while fetching initial data
-  // Once we have pdfUrl, let Document component handle its own loading
-  const showLoadingScreen = 
-    bookLoading || 
-    pdfUrlLoading || 
-    !pdfUrl
+  const showLoadingScreen = bookLoading || pdfUrlLoading || !pdfBlobUrl
 
   const documentOptions = useMemo(() => ({
     workerSrc: pdfWorkerSrc,
@@ -733,15 +590,16 @@ function Reader() {
     )
   }
 
-  if (pdfUrlError) {
+  if (pdfLoadError || pdfUrlError) {
+    const error = pdfLoadError || pdfUrlError
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-red-600">Failed to load PDF: {pdfUrlError.message}</div>
+        <div className="text-lg text-red-600">Failed to load PDF: {error?.message || 'Unknown error'}</div>
       </div>
     )
   }
 
-  if (!pdfUrl) {
+  if (!pdfBlobUrl) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg text-red-600">PDF file not found</div>
@@ -773,15 +631,15 @@ function Reader() {
             <button
               onClick={() => {
                 const newScale = Math.max(0.5, scale - 0.25)
-              trackEvent('zoom_changed', {
-                book_id: bookId,
-                zoom_level: newScale,
-                method: 'zoom_out_button',
-              })
+                trackEvent('zoom_changed', {
+                  book_id: bookId,
+                  zoom_level: newScale,
+                  method: 'zoom_out_button',
+                })
                 setScale(newScale)
                 clearTimeout(window.zoomSaveTimeout)
                 window.zoomSaveTimeout = setTimeout(() => {
-                  saveZoomMutation.mutate(newScale)
+                  saveZoomMutation.mutate(Math.round(newScale * 100)) // Convert scale to percentage
                 }, 500)
               }}
               className="px-3 py-1 bg-gray-200 rounded-sm hover:bg-gray-300 cursor-pointer"
@@ -800,7 +658,7 @@ function Reader() {
                 setScale(newScale)
                 clearTimeout(window.zoomSaveTimeout)
                 window.zoomSaveTimeout = setTimeout(() => {
-                  saveZoomMutation.mutate(newScale)
+                  saveZoomMutation.mutate(Math.round(newScale * 100)) // Convert scale to percentage
                 }, 500)
               }}
               className="px-3 py-1 bg-gray-200 rounded-sm hover:bg-gray-300 cursor-pointer"
@@ -814,9 +672,9 @@ function Reader() {
       {/* PDF Viewer - Centered Single Page */}
       <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
         <div className="max-w-full">
-          {pdfUrl && (
+          {pdfBlobUrl && (
             <Document
-              file={pdfUrl}
+              file={pdfBlobUrl}
               options={documentOptions}
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={onDocumentLoadError}
@@ -864,7 +722,6 @@ function Reader() {
       <div className="bg-white border-t sticky bottom-0 z-10 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between gap-4">
-            {/* Previous Button */}
             <button
               onClick={goToPreviousPage}
               disabled={currentPage <= 1}
@@ -873,14 +730,13 @@ function Reader() {
               ← Previous
             </button>
 
-            {/* Page Info and Jump */}
             <div className="flex items-center gap-3 flex-1 justify-center">
               <button
                 onClick={() => {
-                trackEvent('page_jump_modal_opened', {
-                  book_id: bookId,
-                  method: 'page_info_click',
-                })
+                  trackEvent('page_jump_modal_opened', {
+                    book_id: bookId,
+                    method: 'page_info_click',
+                  })
                   setShowPageJumpModal(true)
                 }}
                 className="text-sm text-gray-700 hover:text-blue-600 font-medium px-3 py-1 rounded hover:bg-gray-100 transition-colors"
@@ -894,7 +750,6 @@ function Reader() {
               </button>
             </div>
 
-            {/* Next Button */}
             <button
               onClick={goToNextPage}
               disabled={!numPages || currentPage >= numPages}
@@ -909,7 +764,6 @@ function Reader() {
       {/* Page Jump Modal */}
       {showPageJumpModal && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-50"
             onClick={() => {
@@ -921,7 +775,6 @@ function Reader() {
               setPageJumpInput('')
             }}
           />
-          {/* Modal */}
           <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
             <div
               className="bg-white rounded-lg shadow-2xl p-6 max-w-md w-full mx-4 pointer-events-auto"

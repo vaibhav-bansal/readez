@@ -3,19 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import SubscriptionModal from './SubscriptionModal'
-import { supabase } from '../lib/supabase'
 import * as dodoPayments from '../lib/dodoPayments'
 import toast from 'react-hot-toast'
 
 // Mock dependencies
-vi.mock('../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      getUser: vi.fn(),
-    },
-  },
-}))
-
 vi.mock('../lib/dodoPayments', () => ({
   createCheckoutSession: vi.fn(),
 }))
@@ -107,33 +98,7 @@ describe('SubscriptionModal', () => {
       expect(onClose).toHaveBeenCalledTimes(1)
     })
 
-    it('should show error if user is not authenticated', async () => {
-      supabase.auth.getUser.mockResolvedValue({
-        data: { user: null },
-        error: new Error('Not authenticated'),
-      })
-
-      renderModal()
-
-      const upgradeButton = screen.getByText('Lock in $4.99/mo')
-      fireEvent.click(upgradeButton)
-
-      await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Please sign in to upgrade your subscription')
-      })
-    })
-
-    it('should initiate checkout for authenticated user', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-      }
-
-      supabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      })
-
+    it('should initiate checkout for pro tier', async () => {
       dodoPayments.createCheckoutSession.mockResolvedValue('https://checkout.dodo.com/session-123')
 
       renderModal()
@@ -144,8 +109,6 @@ describe('SubscriptionModal', () => {
       await waitFor(() => {
         expect(dodoPayments.createCheckoutSession).toHaveBeenCalledWith({
           tier: 'pro',
-          userId: 'user-123',
-          userEmail: 'test@example.com',
         })
       })
 
@@ -153,16 +116,6 @@ describe('SubscriptionModal', () => {
     })
 
     it('should handle checkout errors gracefully', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-      }
-
-      supabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      })
-
       dodoPayments.createCheckoutSession.mockRejectedValue(new Error('Checkout failed'))
 
       renderModal()
@@ -176,16 +129,6 @@ describe('SubscriptionModal', () => {
     })
 
     it('should disable buttons while loading', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-      }
-
-      supabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      })
-
       // Make checkout take time
       dodoPayments.createCheckoutSession.mockImplementation(
         () => new Promise(resolve => setTimeout(() => resolve('https://checkout.dodo.com'), 1000))
@@ -203,16 +146,6 @@ describe('SubscriptionModal', () => {
     })
 
     it('should upgrade to Plus tier when Plus button clicked', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-      }
-
-      supabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      })
-
       dodoPayments.createCheckoutSession.mockResolvedValue('https://checkout.dodo.com/session-456')
 
       renderModal()
@@ -223,8 +156,6 @@ describe('SubscriptionModal', () => {
       await waitFor(() => {
         expect(dodoPayments.createCheckoutSession).toHaveBeenCalledWith({
           tier: 'plus',
-          userId: 'user-123',
-          userEmail: 'test@example.com',
         })
       })
     })

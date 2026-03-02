@@ -4,7 +4,6 @@
 import { useState } from 'react'
 import { trackEvent } from '../lib/posthog'
 import { createCheckoutSession } from '../lib/dodoPayments'
-import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 
 export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free' }) {
