@@ -22,6 +22,3 @@ python-dotenv>=1.0.0
 
 # File handling
 aiofiles>=23.2.1
-
-# Migration (only needed for Supabase migration)
-supabase>=2.0.0
