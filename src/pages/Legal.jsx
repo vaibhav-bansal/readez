@@ -173,9 +173,9 @@ function Legal() {
                 </p>
                 <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
                   <li>
-                    <strong>Supabase</strong> - Database, authentication, and file storage (
+                    <strong>Railway</strong> - Backend hosting, database, and file storage (
                     <a
-                      href="https://supabase.com/privacy"
+                      href="https://railway.app/legal/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-700 underline"

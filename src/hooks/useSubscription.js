@@ -2,7 +2,7 @@
 // React hook for accessing user's subscription data throughout the app
 
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import api from '../lib/api'
 import {
   getUserSubscription,
   hasAccessToTier,
@@ -12,7 +12,7 @@ import {
 
 /**
  * Hook to get and manage user subscription
- * @param {string} userId - User ID from Supabase auth
+ * @param {string} userId - User ID
  * @returns {object} Subscription data and helper methods
  */
 export function useSubscription(userId) {
@@ -25,9 +25,9 @@ export function useSubscription(userId) {
   } = useQuery({
     queryKey: ['subscription', userId],
     queryFn: () => getUserSubscription(userId),
-    enabled: !!userId, // Only fetch if userId exists
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   })
 
   // Get user's current tier
@@ -56,7 +56,6 @@ export function useSubscription(userId) {
     isLoading,
     error,
     refetch,
-    // Helper methods
     hasAccess,
     canUseFeature,
     isPro,
@@ -68,35 +67,38 @@ export function useSubscription(userId) {
 }
 
 /**
- * Hook to listen to subscription changes in realtime
- * @param {string} userId - User ID
- * @param {function} onUpdate - Callback when subscription updates
+ * Hook for polling subscription status (e.g., after payment)
+ * @param {object} options - Polling options
+ * @param {boolean} options.enabled - Whether polling is enabled
+ * @param {number} options.interval - Poll interval in ms (default 2000)
+ * @param {function} options.onSuccess - Callback when subscription becomes active
  */
-export function useSubscriptionRealtime(userId, onUpdate) {
-  if (!userId) return
+export function useSubscriptionPolling(options = {}) {
+  const {
+    enabled = false,
+    interval = 2000,
+    onSuccess,
+  } = options
 
-  // Subscribe to subscription changes
-  const channel = supabase
-    .channel(`subscription:${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'subscriptions',
-        filter: `user_id=eq.${userId}`,
-      },
-      (payload) => {
-        console.log('Subscription changed:', payload)
-        if (onUpdate) {
-          onUpdate(payload.new)
-        }
-      },
-    )
-    .subscribe()
+  const { data: subscriptionData, refetch } = useQuery({
+    queryKey: ['subscription-poll'],
+    queryFn: async () => {
+      const data = await api.subscription.get()
+      return data.subscription
+    },
+    enabled,
+    refetchInterval: enabled ? interval : false,
+    refetchIntervalInBackground: true,
+    staleTime: 0,
+  })
 
-  // Cleanup function
-  return () => {
-    supabase.removeChannel(channel)
+  // Check for success condition
+  if (enabled && subscriptionData && subscriptionData.tier !== TIERS.FREE) {
+    onSuccess?.(subscriptionData)
+  }
+
+  return {
+    subscription: subscriptionData,
+    refetch,
   }
 }

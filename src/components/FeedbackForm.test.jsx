@@ -3,39 +3,29 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import FeedbackForm from './FeedbackForm'
+import api from '../lib/api'
 
-// Mock Supabase
-vi.mock('../lib/supabase', () => ({
-  supabase: {
+// Mock API
+vi.mock('../lib/api', () => ({
+  default: {
     auth: {
-      getUser: vi.fn(() =>
+      getCurrentUser: vi.fn(() =>
         Promise.resolve({
-          data: {
-            user: {
-              id: 'test-user-id',
-              email: 'test@example.com',
-            },
-          },
+          id: 'test-user-id',
+          email: 'test@example.com',
         })
       ),
     },
-    from: vi.fn(() => ({
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() =>
-            Promise.resolve({
-              data: {
-                id: 'test-feedback-id',
-                category: 'General Query',
-                subject: 'Test Subject',
-                description: 'Test Description',
-              },
-              error: null,
-            })
-          ),
-        })),
-      })),
-    })),
+    feedback: {
+      submit: vi.fn(() =>
+        Promise.resolve({
+          id: 'test-feedback-id',
+          category: 'general',
+          subject: 'Test Subject',
+          description: 'Test Description',
+        })
+      ),
+    },
   },
 }))
 
@@ -105,6 +95,13 @@ describe('FeedbackForm', () => {
     expect(options[1]).toHaveTextContent('Feature Request')
     expect(options[2]).toHaveTextContent('Bug Report')
     expect(options[3]).toHaveTextContent('Other')
+  })
+
+  it('has default category set to general', () => {
+    renderWithClient(<FeedbackForm onClose={mockOnClose} />)
+
+    const categorySelect = screen.getByLabelText(/category/i)
+    expect(categorySelect).toHaveValue('general')
   })
 
   it('closes modal when cancel button is clicked', async () => {
@@ -187,9 +184,9 @@ describe('FeedbackForm', () => {
 
     const categorySelect = screen.getByLabelText(/category/i)
 
-    expect(categorySelect).toHaveValue('General Query')
+    expect(categorySelect).toHaveValue('general')
 
-    await user.selectOptions(categorySelect, 'Bug Report')
-    expect(categorySelect).toHaveValue('Bug Report')
+    await user.selectOptions(categorySelect, 'bug')
+    expect(categorySelect).toHaveValue('bug')
   })
 })

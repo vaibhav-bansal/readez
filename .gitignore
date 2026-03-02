@@ -25,3 +25,14 @@ dist-ssr
 
 
 .env
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Storage
+backend/storage

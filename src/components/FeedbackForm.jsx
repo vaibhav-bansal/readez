@@ -1,43 +1,41 @@
 import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import api from '../lib/api'
 import toast from 'react-hot-toast'
 import { trackEvent } from '../lib/posthog'
 
 function FeedbackForm({ onClose }) {
   const [user, setUser] = useState(null)
   const [email, setEmail] = useState('')
-  const [category, setCategory] = useState('General Query')
+  const [category, setCategory] = useState('general')
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
 
   useEffect(() => {
     // Get current user and auto-fill email
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUser(user)
-        setEmail(user.email || '')
+    const getUser = async () => {
+      try {
+        const userData = await api.auth.getCurrentUser()
+        if (userData) {
+          setUser(userData)
+          setEmail(userData.email || '')
+        }
+      } catch {
+        // Not authenticated, that's okay
       }
-    })
+    }
+    getUser()
   }, [])
 
   const submitFeedbackMutation = useMutation({
     mutationFn: async ({ email, category, subject, description }) => {
-      const { data, error } = await supabase
-        .from('feedback')
-        .insert({
-          user_id: user?.id || null,
-          email,
-          category,
-          subject,
-          description,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
+      return await api.feedback.submit({
+        category,
+        subject,
+        description,
+        email,
+      })
     },
     onSuccess: (data) => {
       setIsSubmitted(true)
@@ -143,10 +141,10 @@ function FeedbackForm({ onClose }) {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
-            <option value="General Query">General Query</option>
-            <option value="Feature Request">Feature Request</option>
-            <option value="Bug Report">Bug Report</option>
-            <option value="Other">Other</option>
+            <option value="general">General Query</option>
+            <option value="feature">Feature Request</option>
+            <option value="bug">Bug Report</option>
+            <option value="other">Other</option>
           </select>
         </div>
 

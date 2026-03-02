@@ -69,12 +69,12 @@ describe('Legal Page', () => {
 
     // Check for external links to privacy policies
     const links = screen.getAllByRole('link')
-    const supabaseLink = links.find(link => link.href === 'https://supabase.com/privacy')
+    const railwayLink = links.find(link => link.href === 'https://railway.app/legal/privacy')
     const posthogLink = links.find(link => link.href === 'https://posthog.com/privacy')
     const vercelLink = links.find(link => link.href === 'https://vercel.com/legal/privacy-policy')
     const googleLink = links.find(link => link.href === 'https://policies.google.com/privacy')
 
-    expect(supabaseLink).toBeInTheDocument()
+    expect(railwayLink).toBeInTheDocument()
     expect(posthogLink).toBeInTheDocument()
     expect(vercelLink).toBeInTheDocument()
     expect(googleLink).toBeInTheDocument()
