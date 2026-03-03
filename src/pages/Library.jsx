@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDropzone } from 'react-dropzone'
-import api from '../lib/api'
+import api, { API_BASE_URL } from '../lib/api'
 import toast from 'react-hot-toast'
 import { useNavigate, Link } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -75,12 +75,11 @@ function Library() {
     queryFn: async () => {
       if (!booksData?.length) return {}
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const urlMap = {}
       booksData.forEach((book) => {
         // Use thumbnail_url from API response if available
         if (book.thumbnail_url) {
-          urlMap[book.id] = `${apiUrl}${book.thumbnail_url}`
+          urlMap[book.id] = `${API_BASE_URL}${book.thumbnail_url}`
         }
       })
       return urlMap

@@ -6,7 +6,7 @@ import { pdfWorkerSrc } from '../lib/pdfWorker'
 import { Document, Page, pdfjs } from 'react-pdf'
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
-import api from '../lib/api'
+import api, { API_BASE_URL } from '../lib/api'
 import toast from 'react-hot-toast'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -136,8 +136,7 @@ function Reader() {
 
     // Convert /file endpoint to /data endpoint
     const dataUrl = signedUrlData.signed_url.replace('/file?', '/data?')
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    const fullUrl = `${apiUrl}${dataUrl}`
+    const fullUrl = `${API_BASE_URL}${dataUrl}`
 
     let objectUrl = null
     fetch(fullUrl, { credentials: 'include' })
