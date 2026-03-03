@@ -195,17 +195,6 @@ function Legal() {
                     </a>)
                   </li>
                   <li>
-                    <strong>Vercel</strong> - Hosting and analytics (
-                    <a
-                      href="https://vercel.com/legal/privacy-policy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 underline"
-                    >
-                      Privacy Policy
-                    </a>)
-                  </li>
-                  <li>
                     <strong>Google</strong> - OAuth authentication (
                     <a
                       href="https://policies.google.com/privacy"

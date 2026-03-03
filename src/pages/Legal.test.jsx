@@ -71,12 +71,10 @@ describe('Legal Page', () => {
     const links = screen.getAllByRole('link')
     const railwayLink = links.find(link => link.href === 'https://railway.app/legal/privacy')
     const posthogLink = links.find(link => link.href === 'https://posthog.com/privacy')
-    const vercelLink = links.find(link => link.href === 'https://vercel.com/legal/privacy-policy')
     const googleLink = links.find(link => link.href === 'https://policies.google.com/privacy')
 
     expect(railwayLink).toBeInTheDocument()
     expect(posthogLink).toBeInTheDocument()
-    expect(vercelLink).toBeInTheDocument()
     expect(googleLink).toBeInTheDocument()
   })
 
