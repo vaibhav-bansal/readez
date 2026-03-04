@@ -30,8 +30,9 @@ export function useSubscription(userId) {
     gcTime: 10 * 60 * 1000,
   })
 
-  // Get user's current tier
-  const tier = subscription?.tier || TIERS.FREE
+  // Get user's effective tier (treat non-active subscriptions as free)
+  const isActive = subscription?.status === 'active'
+  const tier = isActive ? (subscription?.tier || TIERS.FREE) : TIERS.FREE
 
   // Helper methods
   const hasAccess = (requiredTier) => {
@@ -46,8 +47,6 @@ export function useSubscription(userId) {
   const isPro = tier === TIERS.PRO || tier === TIERS.PLUS
   const isPlus = tier === TIERS.PLUS
   const isFree = tier === TIERS.FREE
-
-  const isActive = subscription?.status === 'active'
   const isCancelled = subscription?.cancel_at_period_end === true
 
   return {

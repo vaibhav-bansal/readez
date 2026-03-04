@@ -51,6 +51,8 @@ class Payment(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True)
     dodo_payment_id = Column(String(255), unique=True, nullable=True, index=True)
+    dodo_invoice_id = Column(String(255), nullable=True, index=True)
+    dodo_refund_id = Column(String(255), nullable=True, index=True)
     amount = Column(BigInteger, nullable=False)  # In cents
     currency = Column(String(10), default="USD", nullable=False)
     status = Column(String(20), nullable=False)  # succeeded, failed, refunded

@@ -7,16 +7,32 @@ from datetime import datetime
 import uuid
 
 from app.database import get_db
-from app.models import User, Subscription, SubscriptionUsage
+from app.models import User, Subscription, SubscriptionUsage, Payment
 from app.middleware.auth import get_current_user
 
 router = APIRouter()
+
+
+class PaymentResponse(BaseModel):
+    id: str
+    dodo_payment_id: Optional[str]
+    dodo_invoice_id: Optional[str]
+    dodo_refund_id: Optional[str]
+    amount: int
+    currency: str
+    status: str
+    paid_at: Optional[datetime]
+    refund_amount: Optional[int]
+    refunded_at: Optional[datetime]
+    created_at: datetime
 
 
 class SubscriptionResponse(BaseModel):
     id: str
     tier: str
     status: str
+    dodo_subscription_id: Optional[str]
+    dodo_customer_id: Optional[str]
     current_period_start: Optional[datetime]
     current_period_end: Optional[datetime]
     cancel_at_period_end: bool
@@ -36,6 +52,7 @@ class UsageResponse(BaseModel):
 class SubscriptionWithUsageResponse(BaseModel):
     subscription: Optional[SubscriptionResponse]
     usage: List[UsageResponse]
+    payments: List[PaymentResponse]
 
 
 # Tier limits
@@ -109,15 +126,43 @@ async def get_subscription(
             id=str(subscription.id),
             tier=subscription.tier,
             status=subscription.status,
+            dodo_subscription_id=subscription.dodo_subscription_id,
+            dodo_customer_id=subscription.dodo_customer_id,
             current_period_start=subscription.current_period_start,
             current_period_end=subscription.current_period_end,
             cancel_at_period_end=subscription.cancel_at_period_end,
             created_at=subscription.created_at,
         )
 
+    # Get payment history
+    payment_result = await db.execute(
+        select(Payment)
+        .where(Payment.user_id == user.id)
+        .order_by(Payment.created_at.desc())
+    )
+    payments = payment_result.scalars().all()
+
+    payment_responses = [
+        PaymentResponse(
+            id=str(p.id),
+            dodo_payment_id=p.dodo_payment_id,
+            dodo_invoice_id=p.dodo_invoice_id,
+            dodo_refund_id=p.dodo_refund_id,
+            amount=p.amount,
+            currency=p.currency,
+            status=p.status,
+            paid_at=p.paid_at,
+            refund_amount=p.refund_amount,
+            refunded_at=p.refunded_at,
+            created_at=p.created_at,
+        )
+        for p in payments
+    ]
+
     return SubscriptionWithUsageResponse(
         subscription=subscription_response,
         usage=usage_responses,
+        payments=payment_responses,
     )
 
 

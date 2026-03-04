@@ -406,10 +406,10 @@ function Library() {
         {/* Footer */}
         <footer className="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
           <div className="flex gap-4 justify-center">
-            <Link to="/legal" className="hover:text-gray-700 transition-colors">
+            <Link to="/legal" className="hover:text-gray-700 transition-colors cursor-pointer">
               Terms & Privacy
             </Link>
-            <Link to="/feedback" className="hover:text-gray-700 transition-colors">
+            <Link to="/feedback" className="hover:text-gray-700 transition-colors cursor-pointer">
               Feedback
             </Link>
           </div>

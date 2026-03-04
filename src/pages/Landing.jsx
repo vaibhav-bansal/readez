@@ -111,20 +111,20 @@ function Landing() {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#home" onClick={() => trackEvent('landing_section_scrolled', { section: 'home' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#home" onClick={() => trackEvent('landing_section_scrolled', { section: 'home' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
               Home
             </a>
-            <a href="#features" onClick={() => trackEvent('landing_section_scrolled', { section: 'features' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#features" onClick={() => trackEvent('landing_section_scrolled', { section: 'features' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
               Features
             </a>
-            <a href="#readez-in-action" onClick={() => trackEvent('landing_section_scrolled', { section: 'readez-in-action' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#readez-in-action" onClick={() => trackEvent('landing_section_scrolled', { section: 'readez-in-action' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
               ReadEz in Action
             </a>
-            <a href="#pricing" onClick={() => trackEvent('landing_section_scrolled', { section: 'pricing' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#pricing" onClick={() => trackEvent('landing_section_scrolled', { section: 'pricing' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
               Pricing
             </a>
             {isAuthenticated && (
-              <Link to="/library" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              <Link to="/library" className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
                 Library
               </Link>
             )}
@@ -137,7 +137,7 @@ function Landing() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackEvent('landing_github_clicked')}
-              className="text-gray-700 hover:text-gray-900 transition-colors"
+              className="text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
               aria-label="View on GitHub"
               title="View on GitHub"
             >
@@ -357,7 +357,7 @@ function Landing() {
               <button
                 onClick={handleGetStarted}
                 disabled={signInLoading}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-3 px-6 rounded-lg transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-3 px-6 rounded-lg transition-colors mb-6 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {signInLoading ? 'Signing in...' : 'Get Started Free'}
               </button>
@@ -411,7 +411,7 @@ function Landing() {
               <button
                 onClick={() => handleUpgradeClick('pro')}
                 disabled={loadingTier === 'pro'}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors mb-6 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingTier === 'pro' ? 'Processing...' : 'Lock in $4.99/mo'}
               </button>
@@ -471,7 +471,7 @@ function Landing() {
               <button
                 onClick={() => handleUpgradeClick('plus')}
                 disabled={loadingTier === 'plus'}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors mb-6 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingTier === 'plus' ? 'Processing...' : 'Lock in $9.99/mo'}
               </button>
@@ -626,10 +626,10 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center gap-4">
             <div className="flex gap-6 text-sm">
-              <Link to="/legal" className="hover:text-blue-300 transition-colors">
+              <Link to="/legal" className="hover:text-blue-300 transition-colors cursor-pointer">
                 Terms & Privacy
               </Link>
-              <Link to="/feedback" className="hover:text-blue-300 transition-colors">
+              <Link to="/feedback" className="hover:text-blue-300 transition-colors cursor-pointer">
                 Feedback
               </Link>
               <a
@@ -637,7 +637,7 @@ function Landing() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackEvent('landing_github_clicked', { context: 'footer' })}
-                className="hover:text-blue-300 transition-colors"
+                className="hover:text-blue-300 transition-colors cursor-pointer"
               >
                 GitHub
               </a>

@@ -21,7 +21,7 @@ function Legal() {
             href={GITHUB_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-700 hover:text-gray-900 transition-colors"
+            className="text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
             aria-label="View on GitHub"
             title="View on GitHub"
           >
@@ -70,7 +70,7 @@ function Legal() {
                 href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 underline"
+                className="text-blue-600 hover:text-blue-700 underline cursor-pointer"
               >
                 GitHub
               </a>.
@@ -184,7 +184,7 @@ function Legal() {
                       href="https://railway.app/legal/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 underline"
+                      className="text-blue-600 hover:text-blue-700 underline cursor-pointer"
                     >
                       Privacy Policy
                     </a>)
@@ -195,7 +195,7 @@ function Legal() {
                       href="https://posthog.com/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 underline"
+                      className="text-blue-600 hover:text-blue-700 underline cursor-pointer"
                     >
                       Privacy Policy
                     </a>)
@@ -206,7 +206,7 @@ function Legal() {
                       href="https://policies.google.com/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 underline"
+                      className="text-blue-600 hover:text-blue-700 underline cursor-pointer"
                     >
                       Privacy Policy
                     </a>)
@@ -295,7 +295,7 @@ function Legal() {
                 href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 underline"
+                className="text-blue-600 hover:text-blue-700 underline cursor-pointer"
               >
                 GitHub
               </a>.
