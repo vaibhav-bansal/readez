@@ -111,16 +111,16 @@ function Landing() {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#home" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#home" onClick={() => trackEvent('landing_section_scrolled', { section: 'home' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Home
             </a>
-            <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#features" onClick={() => trackEvent('landing_section_scrolled', { section: 'features' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Features
             </a>
-            <a href="#readez-in-action" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#readez-in-action" onClick={() => trackEvent('landing_section_scrolled', { section: 'readez-in-action' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               ReadEz in Action
             </a>
-            <a href="#pricing" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <a href="#pricing" onClick={() => trackEvent('landing_section_scrolled', { section: 'pricing' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Pricing
             </a>
             {isAuthenticated && (
@@ -201,7 +201,7 @@ function Landing() {
         {/* Terms agreement */}
         <p className="mt-3 text-sm text-gray-600">
           By using ReadEz, you agree to our{' '}
-          <Link to="/legal" className="text-blue-600 hover:text-blue-700 underline">
+          <Link to="/legal" onClick={() => trackEvent('landing_terms_clicked', { context: 'hero' })} className="text-blue-600 hover:text-blue-700 underline">
             Terms & Privacy
           </Link>
         </p>
@@ -568,7 +568,7 @@ function Landing() {
           {/* Terms agreement */}
           <p className="mt-3 text-sm text-blue-100">
             By using ReadEz, you agree to our{' '}
-            <Link to="/legal" className="text-white hover:text-blue-50 underline">
+            <Link to="/legal" onClick={() => trackEvent('landing_terms_clicked', { context: 'cta' })} className="text-white hover:text-blue-50 underline">
               Terms & Privacy
             </Link>
           </p>

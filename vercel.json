@@ -22,6 +22,24 @@
       "headers": [
         { "key": "Content-Type", "value": "text/plain" }
       ]
+    },
+    {
+      "source": "/humans.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain" }
+      ]
+    },
+    {
+      "source": "/ai.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain" }
+      ]
+    },
+    {
+      "source": "/.well-known/security.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain" }
+      ]
     }
   ],
   "rewrites": [
@@ -36,6 +54,18 @@
     {
       "source": "/llms.txt",
       "destination": "/llms.txt"
+    },
+    {
+      "source": "/humans.txt",
+      "destination": "/humans.txt"
+    },
+    {
+      "source": "/ai.txt",
+      "destination": "/ai.txt"
+    },
+    {
+      "source": "/.well-known/security.txt",
+      "destination": "/.well-known/security.txt"
     },
     {
       "source": "/(.*)",

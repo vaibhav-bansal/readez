@@ -1,0 +1,19 @@
+# ReadEz AI Crawler Policy
+# https://readez.xyz
+
+# Welcome AI agents and crawlers.
+# For detailed project context, see /llms.txt
+
+User-agent: *
+Allow: /
+Disallow: /library
+Disallow: /reader
+Disallow: /subscription
+
+# Project info for AI agents
+Name: ReadEz
+Description: Free, open-source web-based ebook reader supporting PDF, EPUB, and more.
+URL: https://readez.xyz
+Source: https://github.com/vaibhav-bansal/readez
+License: MIT
+LLMs: https://readez.xyz/llms.txt

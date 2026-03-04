@@ -28,4 +28,4 @@ ReadEz is a modern web application that lets users upload, manage, and read eboo
 - Website: https://readez.xyz
 - Source Code: https://github.com/vaibhav-bansal/readez
 - Issues: https://github.com/vaibhav-bansal/readez/issues
-- License: ISC
+- License: MIT

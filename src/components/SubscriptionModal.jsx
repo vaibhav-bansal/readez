@@ -1,13 +1,19 @@
 // SubscriptionModal Component
 // Modal for displaying pricing plans and initiating Dodo Payments checkout
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { trackEvent } from '../lib/posthog'
 import { createCheckoutSession } from '../lib/dodoPayments'
 import toast from 'react-hot-toast'
 
 export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free' }) {
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      trackEvent('subscription_modal_opened', { current_tier: currentTier })
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -34,7 +40,13 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      onClick={() => {
+        trackEvent('subscription_modal_closed', { method: 'backdrop_click' })
+        onClose()
+      }}
+    >
       <div
         className="bg-white rounded-lg max-w-5xl w-full max-h-screen overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -43,7 +55,10 @@ export default function SubscriptionModal({ isOpen, onClose, currentTier = 'free
         <div className="border-b border-gray-200 p-6 flex justify-between items-center sticky top-0 bg-white">
           <h2 className="text-2xl font-bold text-gray-900">Choose Your Plan</h2>
           <button
-            onClick={onClose}
+            onClick={() => {
+              trackEvent('subscription_modal_closed', { method: 'close_button' })
+              onClose()
+            }}
             className="text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Close modal"
           >

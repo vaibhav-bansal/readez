@@ -160,6 +160,19 @@ export const books = {
   },
 
   /**
+   * Upload a thumbnail for a book.
+   */
+  async uploadThumbnail(bookId, thumbnailBlob) {
+    const formData = new FormData();
+    formData.append('file', thumbnailBlob, 'thumbnail.jpg');
+
+    return apiRequest(`/books/${bookId}/thumbnail`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  /**
    * Delete a book.
    */
   async delete(bookId) {

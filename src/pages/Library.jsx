@@ -22,6 +22,11 @@ function Library() {
   const [deleteConfirmation, setDeleteConfirmation] = useState(null) // { bookId, title }
   const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false)
 
+  // Track library page view on mount
+  useEffect(() => {
+    trackEvent('library_page_viewed')
+  }, [])
+
   // Get current user
   const { data: userData } = useQuery({
     queryKey: ['user'],
@@ -142,6 +147,13 @@ function Library() {
     setDeleteConfirmation(null)
   }
 
+  // Track when books are loaded
+  useEffect(() => {
+    if (booksData) {
+      trackEvent('books_loaded', { book_count: booksData.length })
+    }
+  }, [booksData])
+
   useEffect(() => {
     if (booksError) {
       toast.error('Failed to load library')
@@ -180,17 +192,18 @@ function Library() {
       // Upload via API (backend handles storage)
       const bookData = await api.books.upload(pdfFile)
 
-      // Try to generate and upload thumbnail
-      // Note: For now, thumbnail generation happens client-side
-      // In future, this could be moved to backend
+      // Generate and upload thumbnail
       let thumbnailGenerated = false
       try {
         const thumbnailBlob = await generateThumbnail(pdfFile)
-        // TODO: Add thumbnail upload endpoint to backend
-        // For now, thumbnail is generated when PDF is first opened
+        await api.books.uploadThumbnail(bookData.id, thumbnailBlob)
         thumbnailGenerated = true
       } catch (thumbnailError) {
         console.warn('Thumbnail generation error:', thumbnailError)
+        trackEvent('thumbnail_upload_failed', {
+          book_id: bookData.id,
+          error: thumbnailError.message || 'Unknown error',
+        })
       }
 
       // Track successful upload
@@ -216,6 +229,8 @@ function Library() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDragEnter: () => trackEvent('book_drag_entered'),
+    onDragLeave: () => trackEvent('book_drag_left'),
     accept: {
       'application/pdf': ['.pdf']
     },

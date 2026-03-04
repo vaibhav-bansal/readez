@@ -13,6 +13,7 @@ import 'react-pdf/dist/Page/TextLayer.css'
 import { useProgressStore } from '../store/progressStore'
 import BookLoadingScreen from '../components/BookLoadingScreen'
 import { trackEvent } from '../lib/posthog'
+import { generateThumbnail } from '../lib/thumbnailGenerator'
 
 function Reader() {
   const { bookId } = useParams()
@@ -28,6 +29,7 @@ function Reader() {
   const lastSavedPageRef = useRef(null)
   const touchStartRef = useRef({ x: 0, y: 0 })
   const touchEndRef = useRef({ x: 0, y: 0 })
+  const thumbnailAttemptedRef = useRef(false)
 
   const { setProgress } = useProgressStore()
 
@@ -158,6 +160,7 @@ function Reader() {
         objectUrl = URL.createObjectURL(blob)
         setPdfBlobUrl(objectUrl)
         setPdfLoadError(null)
+        trackEvent('book_file_accessed', { book_id: bookId })
       })
       .catch(error => {
         console.error('PDF fetch error:', error)
@@ -186,6 +189,28 @@ function Reader() {
       toast.error(`Failed to load PDF file: ${pdfLoadError.message || 'Unknown error'}`)
     }
   }, [pdfLoadError])
+
+  // Generate and upload thumbnail if missing
+  useEffect(() => {
+    if (!book || book.thumbnail_url || !pdfBlobUrl || thumbnailAttemptedRef.current) return
+    thumbnailAttemptedRef.current = true
+
+    const generateAndUpload = async () => {
+      try {
+        const response = await fetch(pdfBlobUrl)
+        const blob = await response.blob()
+        const file = new File([blob], book.file_name, { type: 'application/pdf' })
+        const thumbnailBlob = await generateThumbnail(file)
+        await api.books.uploadThumbnail(book.id, thumbnailBlob)
+        queryClient.invalidateQueries({ queryKey: ['book', bookId] })
+        toast.success('Book cover generated successfully')
+      } catch (error) {
+        console.warn('Thumbnail generation failed:', error)
+      }
+    }
+
+    generateAndUpload()
+  }, [book, pdfBlobUrl])
 
   // Fetch reading progress
   const { data: readingProgress, isLoading: readingProgressLoading } = useQuery({
@@ -302,6 +327,11 @@ function Reader() {
       console.log('Restoring to page:', targetPage)
       setCurrentPage(targetPage)
       hasRestoredRef.current = true
+      trackEvent('reading_progress_restored', {
+        book_id: bookId,
+        restored_page: targetPage,
+        total_pages: totalPages,
+      })
     } else if (!readingProgress?.current_page && !hasRestoredRef.current) {
       hasRestoredRef.current = true
       lastSavedPageRef.current = 1
@@ -315,6 +345,11 @@ function Reader() {
       console.log('Restoring to page from useEffect:', targetPage)
       setCurrentPage(targetPage)
       hasRestoredRef.current = true
+      trackEvent('reading_progress_restored', {
+        book_id: bookId,
+        restored_page: targetPage,
+        total_pages: numPages,
+      })
     } else if (numPages && !readingProgress?.current_page && !hasRestoredRef.current) {
       console.log('No saved progress, starting at page 1')
       setCurrentPage(1)
@@ -355,6 +390,10 @@ function Reader() {
 
   const onDocumentLoadError = (error) => {
     console.error('PDF load error:', error)
+    trackEvent('pdf_load_failed', {
+      book_id: bookId,
+      error: error.message || 'Unknown error',
+    })
     toast.error(`Failed to load PDF document: ${error.message || 'Unknown error'}`)
   }
 

@@ -1,9 +1,15 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import FeedbackForm from '../components/FeedbackForm'
+import { trackEvent } from '../lib/posthog'
 
 const GITHUB_REPO_URL = 'https://github.com/vaibhav-bansal/readez'
 
 function Feedback() {
+  useEffect(() => {
+    trackEvent('feedback_page_viewed')
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}

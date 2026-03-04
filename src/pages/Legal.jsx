@@ -1,8 +1,14 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { trackEvent } from '../lib/posthog'
 
 const GITHUB_REPO_URL = 'https://github.com/vaibhav-bansal/readez'
 
 function Legal() {
+  useEffect(() => {
+    trackEvent('legal_page_viewed')
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}

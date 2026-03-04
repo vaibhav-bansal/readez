@@ -56,6 +56,7 @@ export default function SubscriptionSuccess() {
   }, [status])
 
   const handleContinue = () => {
+    trackEvent('subscription_continue_clicked', { status })
     navigate('/library')
   }
 
