@@ -43,6 +43,9 @@ docs
 # Railway
 railway.toml
 
+# Storage (user-uploaded books and thumbnails)
+backend/storage
+
 # Misc
 .claude
 *.log

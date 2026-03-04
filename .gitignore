@@ -34,5 +34,5 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Storage
-# backend/storage
+# Storage (user-uploaded books and thumbnails)
+backend/storage/
