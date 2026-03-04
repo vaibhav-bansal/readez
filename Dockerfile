@@ -45,11 +45,9 @@ COPY --from=frontend-builder /app/dist ./static
 # Create storage directories
 RUN mkdir -p /app/storage/books /app/storage/thumbnails
 
-# Expose port
-EXPOSE 8000
-
 # Set Python path to include backend
 ENV PYTHONPATH=/app/backend
+ENV PORT=8000
 
-# Start the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the application using PORT env var (Railway sets this dynamically)
+CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
