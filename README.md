@@ -1,129 +1,151 @@
-# ReadEz - PDF Reader
+# ReadEz
 
-A lightweight web-based PDF reader with infinite scroll, progress tracking, and cross-device sync.
+A free, open-source web-based PDF reader with infinite scroll, progress tracking, and cross-device sync.
 
 ## Features
 
-- 📚 Upload and manage PDF books
-- 📖 Infinite scroll reading experience
-- 💾 Automatic progress tracking
-- 🔄 Cross-device sync via Supabase
-- 🔐 Google Sign-in authentication
-- 📱 Responsive design (mobile, tablet, desktop)
-- ⚡ Fast and lightweight
+- Upload and manage PDF books with drag-and-drop
+- Infinite scroll reading experience
+- Automatic reading progress tracking
+- Cross-device sync
+- Google Sign-in authentication
+- Responsive design (mobile, tablet, desktop)
+- Auto-generated book cover thumbnails
 
 ## Tech Stack
 
-- **Frontend**: React + Vite
-- **PDF Rendering**: react-pdf (PDF.js)
-- **Infinite Scroll**: react-infinite-scroll-component
-- **File Upload**: react-dropzone
-- **State Management**: Zustand with persistence
-- **Data Fetching**: TanStack Query (React Query)
-- **Backend**: Supabase (Auth, Database, Storage)
-- **Styling**: Tailwind CSS
-- **Notifications**: react-hot-toast
-- **Analytics**: PostHog (with session replays)
+**Frontend:** React 19, Vite, Tailwind CSS, Zustand, TanStack Query, react-pdf
+
+**Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL (asyncpg)
+
+**Auth:** Google OAuth
+
+**Analytics:** PostHog (optional)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- A Supabase account
-- Google OAuth credentials (optional, for Google sign-in)
+- Node.js 20+
+- Python 3.11+
+- PostgreSQL database
+- Google OAuth credentials
 
-### Installation
+### 1. Clone and install
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/vaibhav-bansal/readez.git
 cd readez
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Set up Supabase (see [supabase/README.md](./supabase/README.md)):
-   - Create a Supabase project
-   - Run the SQL schema from `supabase/schema.sql`
-   - Create a Storage bucket named `books`
-   - Configure Google OAuth
+### 2. Set up the backend
 
-4. Create `.env` file:
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key_here
-VITE_POSTHOG_KEY=your_posthog_project_api_key
-VITE_POSTHOG_HOST=https://app.posthog.com
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-**Note**: 
-- This app uses Supabase's new publishable keys (format: `sb_publishable_...`). Get your publishable key from Supabase Dashboard → Project Settings → API.
-- PostHog is used for analytics and session replays. Get your PostHog key from PostHog Dashboard → Project Settings → Project API Key. If using PostHog Cloud, use `https://app.posthog.com` as the host. For self-hosted instances, use your PostHog instance URL.
+Copy the example env file and fill in your values:
 
-5. Start development server:
+```bash
+cp .env.example .env
+```
+
+Key environment variables:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `SESSION_SECRET_KEY` | Random secret key (min 32 chars) |
+| `FRONTEND_URL` | Frontend URL (default: `http://localhost:5173`) |
+| `BACKEND_URL` | Backend URL (default: `http://localhost:8000`) |
+
+### 3. Set up the frontend
+
+Create a `.env` file in the project root:
+
+```env
+VITE_POSTHOG_KEY=your_posthog_project_api_key       # optional
+VITE_POSTHOG_HOST=https://app.posthog.com            # optional
+```
+
+### 4. Run in development
+
+Start the backend:
+
+```bash
+cd backend
+uvicorn app.main:app --reload --port 8000
+```
+
+Start the frontend (in a separate terminal):
+
 ```bash
 npm run dev
 ```
 
-6. Open [http://localhost:5173](http://localhost:5173) in your browser
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## Project Structure
 
 ```
-src/
-  components/
-    Auth.jsx          # Authentication wrapper component
-  pages/
-    Library.jsx       # Library view (book list + upload)
-    Reader.jsx        # PDF reader with infinite scroll
-  lib/
-    supabase.js       # Supabase client initialization
-    posthog.js        # PostHog analytics initialization
-  store/
-    progressStore.js  # Zustand store for reading progress
-  App.jsx             # Main app component with routing
-  main.jsx            # Entry point
+readez/
+  src/                    # React frontend
+    components/           # Reusable UI components
+    pages/                # Route pages (Library, Reader, Landing, etc.)
+    hooks/                # Custom React hooks
+    lib/                  # Utilities (API client, PDF worker, analytics)
+    store/                # Zustand state management
+  backend/                # FastAPI backend
+    app/
+      models/             # SQLAlchemy models
+      routes/             # API route handlers
+      services/           # Business logic (storage, etc.)
+      middleware/         # Auth middleware
+      config.py           # App configuration
+      database.py         # Database setup
+      main.py             # FastAPI app entry point
 ```
 
 ## Deployment
 
-### Vercel
+### Docker
 
-1. Push your code to GitHub
-2. Import project in Vercel
-3. Add environment variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY`
-   - `VITE_POSTHOG_KEY` (optional, for analytics)
-   - `VITE_POSTHOG_HOST` (optional, defaults to `https://app.posthog.com`)
-4. Deploy!
+Build and run with Docker:
 
-The app will be automatically deployed on every push to main branch.
-
-## Usage
-
-1. **Sign in**: Click "Sign in with Google" to authenticate
-2. **Upload**: Drag and drop a PDF file or click to select
-3. **Read**: Click on any book to open the reader
-4. **Scroll**: Scroll down to load more pages automatically
-5. **Progress**: Your reading progress is automatically saved and synced
-
-## Development
-
-### Build for production:
 ```bash
-npm run build
+docker build -t readez .
+docker run -p 8000:8000 \
+  -e DATABASE_URL=your_database_url \
+  -e GOOGLE_CLIENT_ID=your_client_id \
+  -e GOOGLE_CLIENT_SECRET=your_client_secret \
+  -e SESSION_SECRET_KEY=your_secret_key \
+  -e FRONTEND_URL=https://your-domain.com \
+  -e BACKEND_URL=https://your-domain.com \
+  readez
 ```
 
-### Preview production build:
-```bash
-npm run preview
-```
+### Railway
+
+1. Connect your GitHub repository to Railway
+2. Set the required environment variables
+3. Deploy
+
+## Contributing
+
+Contributions are welcome! Please feel free to open an issue or submit a pull request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'feat: add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
 
 ## License
 
-ISC
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

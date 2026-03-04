@@ -42,13 +42,6 @@ COPY backend ./backend
 # Copy frontend build from stage 1
 COPY --from=frontend-builder /app/dist ./static
 
-# Copy existing books to temp location for one-time migration
-COPY backend/storage ./initial_storage
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
 # Create storage directories
 RUN mkdir -p /app/storage/books /app/storage/thumbnails
 
@@ -58,5 +51,5 @@ EXPOSE 8000
 # Set Python path to include backend
 ENV PYTHONPATH=/app/backend
 
-# Run entrypoint script which starts the app
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Start the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

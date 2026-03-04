@@ -42,7 +42,7 @@ class StorageService:
         file_path = user_dir / file_name
 
         # Write file
-        content = await file_content.read()
+        content = file_content.read()
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(content)
 
@@ -63,7 +63,7 @@ class StorageService:
         file_name = f"{original_timestamp}_thumb.jpg"
         file_path = user_dir / file_name
 
-        content = await thumbnail_content.read()
+        content = thumbnail_content.read()
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(content)
 
@@ -73,7 +73,7 @@ class StorageService:
         """
         Read a file from storage.
         """
-        file_path = self.books_path / relative_path
+        file_path = self.storage_path / relative_path
         async with aiofiles.open(file_path, "rb") as f:
             return await f.read()
 
@@ -81,7 +81,7 @@ class StorageService:
         """
         Delete a file from storage.
         """
-        file_path = self.books_path / relative_path
+        file_path = self.storage_path / relative_path
         if file_path.exists():
             file_path.unlink()
             return True
