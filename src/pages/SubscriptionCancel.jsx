@@ -13,11 +13,13 @@ export default function SubscriptionCancel() {
   }, [])
 
   const handleTryAgain = () => {
+    trackEvent('subscription_try_again_clicked')
     navigate('/library')
     // User can click upgrade button again from library
   }
 
   const handleGoBack = () => {
+    trackEvent('subscription_back_clicked')
     navigate('/library')
   }
 

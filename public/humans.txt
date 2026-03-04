@@ -1,0 +1,13 @@
+/* TEAM */
+Creator: Vaibhav Bansal
+GitHub: https://github.com/vaibhav-bansal
+Site: https://readez.xyz
+
+/* THANKS */
+Contributors: https://github.com/vaibhav-bansal/readez/graphs/contributors
+
+/* SITE */
+Last update: 2026-03-04
+Language: English
+Standards: HTML5, CSS3, ES2024
+Software: React, Vite, Tailwind CSS, Supabase

@@ -5,5 +5,23 @@ User-agent: *
 Allow: /
 Disallow: /library
 Disallow: /reader
+Disallow: /subscription
+
+# AI Crawlers
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: Google-Extended
+User-agent: CCBot
+User-agent: anthropic-ai
+User-agent: ClaudeBot
+User-agent: Bytespider
+User-agent: PerplexityBot
+User-agent: Amazonbot
+Allow: /
+Allow: /llms.txt
+Allow: /ai.txt
+Disallow: /library
+Disallow: /reader
+Disallow: /subscription
 
 Sitemap: https://readez.xyz/sitemap.xml

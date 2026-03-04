@@ -262,6 +262,84 @@ async def delete_book(
     return {"message": "Book deleted successfully"}
 
 
+@router.post("/{book_id}/thumbnail", response_model=BookResponse)
+async def upload_thumbnail(
+    book_id: str,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Upload a thumbnail image for a book.
+    """
+    try:
+        book_uuid = uuid.UUID(book_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid book ID",
+        )
+
+    result = await db.execute(
+        select(Book).where(Book.id == book_uuid, Book.user_id == user.id)
+    )
+    book = result.scalar_one_or_none()
+
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found",
+        )
+
+    # Read thumbnail content
+    content = await file.read()
+    file_content = io.BytesIO(content)
+
+    # Extract timestamp from the book's file path for consistent naming
+    import re
+    match = re.search(r"(\d+)\.pdf$", book.file_path)
+    original_timestamp = int(match.group(1)) if match else int(datetime.utcnow().timestamp() * 1000)
+
+    # Delete old thumbnail if exists
+    if book.thumbnail_path:
+        try:
+            await storage_service.delete_file(book.thumbnail_path)
+        except Exception:
+            pass
+
+    # Save new thumbnail
+    try:
+        thumbnail_path = await storage_service.save_thumbnail(
+            user_id=str(user.id),
+            thumbnail_content=file_content,
+            original_timestamp=original_timestamp,
+        )
+    except Exception as e:
+        logger.error(f"Failed to save thumbnail: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save thumbnail: {type(e).__name__}: {e}",
+        )
+
+    # Update book record
+    book.thumbnail_path = thumbnail_path
+    await db.commit()
+    await db.refresh(book)
+
+    thumbnail_url = f"/books/{book.id}/thumbnail"
+
+    return BookResponse(
+        id=str(book.id),
+        title=book.title,
+        file_name=book.file_name,
+        file_size=book.file_size,
+        total_pages=book.total_pages,
+        thumbnail_url=thumbnail_url,
+        created_at=book.created_at,
+        updated_at=book.updated_at,
+    )
+
+
 @router.get("/{book_id}/signed-url", response_model=SignedUrlResponse)
 async def get_signed_url(
     book_id: str,
