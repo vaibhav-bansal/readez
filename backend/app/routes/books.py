@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,8 @@ from app.database import get_db
 from app.models import User, Book, ReadingProgress
 from app.middleware.auth import get_current_user
 from app.services.storage import storage_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -156,39 +159,54 @@ async def upload_book(
             detail="File size exceeds 100MB limit",
         )
 
-    # Get page count (basic implementation - requires pdf processing)
-    # For now, we'll set it to 0 and update later with proper PDF processing
-    total_pages = 0
-
     # Save file to storage
-    file_content = io.BytesIO(content)
-    relative_path, _ = await storage_service.save_file(
-        user_id=str(user.id),
-        file_content=file_content,
-        file_extension=".pdf",
-    )
+    try:
+        file_content = io.BytesIO(content)
+        relative_path, _ = await storage_service.save_file(
+            user_id=str(user.id),
+            file_content=file_content,
+            file_extension=".pdf",
+        )
+    except Exception as e:
+        logger.error(f"Failed to save file to storage: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {type(e).__name__}: {e}",
+        )
 
     # Create book record
-    book_title = title or file.filename.rsplit(".", 1)[0]
-    book = Book(
-        user_id=user.id,
-        title=book_title,
-        file_name=file.filename,
-        file_path=relative_path,
-        file_size=file_size,
-        total_pages=total_pages,
-    )
-    db.add(book)
+    try:
+        book_title = title or file.filename.rsplit(".", 1)[0]
+        book = Book(
+            user_id=user.id,
+            title=book_title,
+            file_name=file.filename,
+            file_path=relative_path,
+            file_size=file_size,
+            total_pages=0,
+        )
+        db.add(book)
 
-    # Create initial reading progress
-    progress = ReadingProgress(
-        user_id=user.id,
-        book_id=book.id,
-    )
-    db.add(progress)
+        # Create initial reading progress
+        progress = ReadingProgress(
+            user_id=user.id,
+            book_id=book.id,
+        )
+        db.add(progress)
 
-    await db.commit()
-    await db.refresh(book)
+        await db.commit()
+        await db.refresh(book)
+    except Exception as e:
+        logger.error(f"Failed to save book to database: {type(e).__name__}: {e}")
+        # Clean up the stored file
+        try:
+            await storage_service.delete_file(relative_path)
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save book record: {type(e).__name__}: {e}",
+        )
 
     return BookResponse(
         id=str(book.id),
