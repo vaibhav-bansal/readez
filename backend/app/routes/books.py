@@ -186,6 +186,7 @@ async def upload_book(
             total_pages=0,
         )
         db.add(book)
+        await db.flush()
 
         # Create initial reading progress
         progress = ReadingProgress(
