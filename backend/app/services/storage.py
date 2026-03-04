@@ -1,3 +1,4 @@
+import logging
 import os
 import aiofiles
 from datetime import datetime, timedelta
@@ -9,14 +10,16 @@ import hmac
 
 from app.config import get_settings
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
 class StorageService:
     def __init__(self):
-        self.storage_path = Path(settings.storage_path)
+        self.storage_path = Path(settings.storage_path).resolve()
         self.books_path = self.storage_path / "books"
         self._ensure_directories()
+        logger.info(f"StorageService initialized: storage_path={self.storage_path}, exists={self.storage_path.exists()}, books_path={self.books_path}, exists={self.books_path.exists()}")
 
     def _ensure_directories(self):
         self.books_path.mkdir(parents=True, exist_ok=True)
@@ -41,13 +44,17 @@ class StorageService:
         file_name = f"{timestamp}{file_extension}"
         file_path = user_dir / file_name
 
+        logger.info(f"Saving file: user_dir={user_dir}, file_path={file_path}")
+
         # Write file
         content = file_content.read()
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(content)
 
         file_size = len(content)
-        return str(file_path.relative_to(self.storage_path)), file_size
+        relative = str(file_path.relative_to(self.storage_path))
+        logger.info(f"File saved: relative_path={relative}, size={file_size}")
+        return relative, file_size
 
     async def save_thumbnail(
         self,
