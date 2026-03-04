@@ -1,62 +1,651 @@
-{
-  "subscription.updated": {
-    "business_id": "bus_0NXOQ0yfCd3Y1rJQSNCqP",
+[
+  {
+    "business_id": "bus_P3SXLcppjXgagmHS",
     "data": {
-      "subscription_id": "sub_0NY8PvRztR7ngF66WJSVR",
-      "status": "active",
-      "customer": {
-        "customer_id": "cus_0NY8KzHqFoBYKXdtS0bHF",
-        "email": "vbansal079@gmail.com",
-        "name": "Vaibhav Bansal"
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "New York, New York",
+        "zipcode": "0"
       },
-      "metadata": {
-        "tier": "pro",
-        "user_id": "00b8ffcf-97fa-43c4-8b66-5a2c615ba07d"
-      },
-      "previous_billing_date": "2026-02-09T16:39:11.259682Z",
-      "next_billing_date": "2026-03-09T16:39:32.619702Z",
-      "expires_at": "2036-02-09T16:39:32.619702Z",
-      "recurring_pre_tax_amount": 499,
-      "currency": "USD"
-    },
-    "timestamp": "2026-02-09T16:39:32.598824Z",
-    "type": "subscription.updated"
-  },
-  "payment.succeeded": {
-    "business_id": "bus_0NXOQ0yfCd3Y1rJQSNCqP",
-    "data": {
-      "payment_id": "pay_0NY8PvRxcnKILRuPrIjlV",
-      "subscription_id": "sub_0NY8PvRztR7ngF66WJSVR",
-      "customer": {
-        "customer_id": "cus_0NY8KzHqFoBYKXdtS0bHF",
-        "email": "vbansal079@gmail.com",
-        "name": "Vaibhav Bansal"
-      },
-      "total_amount": 589,
-      "tax": 90,
+      "brand_id": "bus_P3SXLcppjXgagmHS",
+      "business_id": "bus_P3SXLcppjXgagmHS",
+      "card_holder_name": "John Doe",
+      "card_issuing_country": "GB",
+      "card_last_four": "4242",
+      "card_network": "VISA",
+      "card_type": "CREDIT",
+      "checkout_session_id": "cks_stst1231",
+      "created_at": "2025-08-04T05:30:31.152232Z",
       "currency": "USD",
-      "status": "succeeded",
-      "payment_method": "card",
-      "metadata": {
-        "tier": "pro",
-        "user_id": "00b8ffcf-97fa-43c4-8b66-5a2c615ba07d"
+      "custom_field_responses": null,
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfB",
+        "email": "test@acme.com",
+        "metadata": {},
+        "name": "Test user",
+        "phone_number": "+15555550100"
       },
-      "created_at": "2026-02-09T16:39:11.259682Z"
+      "digital_products_delivered": false,
+      "discount_id": null,
+      "disputes": [],
+      "error_code": null,
+      "error_message": null,
+      "invoice_id": "inv_2IsUnWGtRKFLxk7xAQeyt",
+      "invoice_url": "https://api.dodopayments.com/invoices/payments/pay_2IjeQm4hqU6RA4Z4kwDee",
+      "metadata": {},
+      "payload_type": "Payment",
+      "payment_id": "pay_2IjeQm4hqU6RA4Z4kwDee",
+      "payment_link": "https://test.checkout.dodopayments.com/cbq",
+      "payment_method": "card",
+      "payment_method_type": null,
+      "product_cart": [
+        {
+          "product_id": "pdt_e9mUw084cWnu0tz",
+          "quantity": 1
+        }
+      ],
+      "refunds": [],
+      "settlement_amount": 400,
+      "settlement_currency": "USD",
+      "settlement_tax": null,
+      "status": "succeeded",
+      "subscription_id": null,
+      "tax": null,
+      "total_amount": 400,
+      "updated_at": null
     },
-    "timestamp": "2026-02-09T16:39:32.598824Z",
+    "timestamp": "2025-08-04T05:30:45.182629Z",
     "type": "payment.succeeded"
   },
-  "subscription.active": {
-    "description": "Same structure as subscription.updated, sent when subscription becomes active"
-  },
-  "subscription.renewed": {
-    "description": "Same structure as subscription.updated, sent when subscription renews"
-  },
-  "subscription.cancelled": {
+  {
+    "business_id": "bus_P3SXLcppjXgagmHS",
     "data": {
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "New York, New York",
+        "zipcode": " "
+      },
+      "brand_id": "bus_P3SXLcppjXgagmHSVaH3N",
+      "business_id": "bus_P3SXLcppjXgagmHS",
+      "card_holder_name": "John Doe",
+      "card_issuing_country": "US",
+      "card_last_four": "0119",
+      "card_network": "VISA",
+      "card_type": "CREDIT",
+      "checkout_session_id": "cks_stst1231",
+      "created_at": "2025-08-04T05:30:31.152232Z",
+      "currency": "USD",
+      "custom_field_responses": null,
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfB",
+        "email": "test@acme.com",
+        "metadata": {},
+        "name": "Test user",
+        "phone_number": "+15555550100"
+      },
+      "digital_products_delivered": false,
+      "discount_id": null,
+      "disputes": [],
+      "error_code": "PROCESSING_ERROR",
+      "error_message": "An error occurred while processing your card. Try again in a little bit.",
+      "invoice_id": "inv_2IsUnWGtRKFLxk7xAQeyt",
+      "invoice_url": "https://api.dodopayments.com/invoices/payments/pay_2IjeQm4hqU6RA4Z4kwDee",
+      "metadata": {},
+      "payload_type": "Payment",
+      "payment_id": "pay_2IjeQm4hqU6RA4Z4kwDee",
+      "payment_link": "https://test.checkout.dodopayments.com/cbq",
+      "payment_method": "card",
+      "payment_method_type": null,
+      "product_cart": [
+        {
+          "product_id": "pdt_e9mUw084cWnu0tz",
+          "quantity": 1
+        }
+      ],
+      "refunds": [],
+      "settlement_amount": 400,
+      "settlement_currency": "USD",
+      "settlement_tax": null,
       "status": "cancelled",
-      "cancelled_at": "2026-02-09T16:28:12.798806Z"
+      "subscription_id": null,
+      "tax": null,
+      "total_amount": 400,
+      "updated_at": null
     },
-    "description": "Same structure as subscription.updated, but status is 'cancelled' and cancelled_at is set"
+    "timestamp": "2025-08-04T05:36:41.609359Z",
+    "type": "payment.cancelled"
+  },
+  {
+    "business_id": "bus_P3SXLcppjXgagmHS",
+    "data": {
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "New York, New York",
+        "zipcode": " "
+      },
+      "brand_id": "bus_P3SXLcppjXgagmHSVaH3N",
+      "business_id": "bus_P3SXLcppjXgagmHS",
+      "card_holder_name": "John Doe",
+      "card_issuing_country": "US",
+      "card_last_four": "0119",
+      "card_network": "VISA",
+      "card_type": "CREDIT",
+      "checkout_session_id": "cks_stst1231",
+      "created_at": "2025-08-04T05:30:31.152232Z",
+      "currency": "USD",
+      "custom_field_responses": null,
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfB",
+        "email": "test@acme.com",
+        "metadata": {},
+        "name": "Test user",
+        "phone_number": "+15555550100"
+      },
+      "digital_products_delivered": false,
+      "discount_id": null,
+      "disputes": [],
+      "error_code": "PROCESSING_ERROR",
+      "error_message": "An error occurred while processing your card. Try again in a little bit.",
+      "invoice_id": "inv_2IsUnWGtRKFLxk7xAQeyt",
+      "invoice_url": "https://api.dodopayments.com/invoices/payments/pay_2IjeQm4hqU6RA4Z4kwDee",
+      "metadata": {},
+      "payload_type": "Payment",
+      "payment_id": "pay_2IjeQm4hqU6RA4Z4kwDee",
+      "payment_link": "https://test.checkout.dodopayments.com/cbq",
+      "payment_method": "card",
+      "payment_method_type": null,
+      "product_cart": [
+        {
+          "product_id": "pdt_e9mUw084cWnu0tz",
+          "quantity": 1
+        }
+      ],
+      "refunds": [],
+      "settlement_amount": 400,
+      "settlement_currency": "USD",
+      "settlement_tax": null,
+      "status": "failed",
+      "subscription_id": null,
+      "tax": null,
+      "total_amount": 400,
+      "updated_at": null
+    },
+    "timestamp": "2025-08-04T05:36:41.609359Z",
+    "type": "payment.failed"
+  },
+  {
+    "business_id": "bus_P3SXLcppjXgagmHS",
+    "data": {
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "New York, New York",
+        "zipcode": " "
+      },
+      "brand_id": "bus_P3SXLcppjXgagmHSVaH3N",
+      "business_id": "bus_P3SXLcppjXgagmHS",
+      "card_holder_name": "John Doe",
+      "card_issuing_country": "US",
+      "card_last_four": "0119",
+      "card_network": "VISA",
+      "card_type": "CREDIT",
+      "checkout_session_id": "cks_stst1231",
+      "created_at": "2025-08-04T05:30:31.152232Z",
+      "currency": "USD",
+      "custom_field_responses": null,
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfB",
+        "email": "test@acme.com",
+        "metadata": {},
+        "name": "Test user",
+        "phone_number": "+15555550100"
+      },
+      "digital_products_delivered": false,
+      "discount_id": null,
+      "disputes": [],
+      "error_code": null,
+      "error_message": null,
+      "invoice_id": "inv_2IsUnWGtRKFLxk7xAQeyt",
+      "invoice_url": "https://api.dodopayments.com/invoices/payments/pay_2IjeQm4hqU6RA4Z4kwDee",
+      "metadata": {},
+      "payload_type": "Payment",
+      "payment_id": "pay_2IjeQm4hqU6RA4Z4kwDee",
+      "payment_link": "https://test.checkout.dodopayments.com/cbq",
+      "payment_method": "card",
+      "payment_method_type": null,
+      "product_cart": [
+        {
+          "product_id": "pdt_e9mUw084cWnu0tz",
+          "quantity": 1
+        }
+      ],
+      "refunds": [],
+      "settlement_amount": 400,
+      "settlement_currency": "USD",
+      "settlement_tax": null,
+      "status": "processing",
+      "subscription_id": null,
+      "tax": null,
+      "total_amount": 400,
+      "updated_at": null
+    },
+    "timestamp": "2025-08-04T05:36:41.609359Z",
+    "type": "payment.processing"
+  },
+  {
+    "business_id": "bus_P3SXLcppjXgagmHSVaH3N",
+    "data": {
+      "amount": 400,
+      "business_id": "bus_P3SXLcppjXgagmHSVaH3N",
+      "created_at": "2025-08-04T05:50:32.873493Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_123",
+        "email": "jane@example.com",
+        "name": "Jane Doe",
+        "phone_number": null
+      },
+      "is_partial": false,
+      "payload_type": "Refund",
+      "payment_id": "pay_aTkzUDRuc7Rb3kVJXE17z",
+      "reason": "Testing Refund failure",
+      "refund_id": "ref_nUV0DuvmVgeKJVbS04L0y",
+      "status": "failed"
+    },
+    "timestamp": "2025-08-04T05:50:38.661452Z",
+    "type": "refund.failed"
+  },
+  {
+    "business_id": "bus_P3SXLcppjXgagmHSVaH3N",
+    "data": {
+      "amount": 400,
+      "business_id": "bus_P3SXLcppjXgagmHSVaH3N",
+      "created_at": "2025-08-04T05:50:32.873493Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_123",
+        "email": "jane@example.com",
+        "name": "Jane Doe",
+        "phone_number": null
+      },
+      "is_partial": false,
+      "payload_type": "Refund",
+      "payment_id": "pay_aTkzUDRuc7Rb3kVJXE17z",
+      "reason": "Testing success refund",
+      "refund_id": "ref_nUV0DuvmVgeKJVbS04L0y",
+      "status": "succeeded"
+    },
+    "timestamp": "2025-08-04T05:47:49.922046Z",
+    "type": "refund.succeeded"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "active",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:45:31.736731Z",
+    "type": "subscription.active"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": "2025-08-04T05:48:25.139421Z",
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "cancelled",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:48:25.134643Z",
+    "type": "subscription.cancelled"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "expired",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:45:31.736731Z",
+    "type": "subscription.expired"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "failed",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:45:31.736731Z",
+    "type": "subscription.failed"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "john doe",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 420,
+      "status": "on_hold",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-07-23T12:01:51.506540Z",
+    "type": "subscription.on_hold"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "active",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:45:31.736731Z",
+    "type": "subscription.plan_changed"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "active",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:45:31.736731Z",
+    "type": "subscription.renewed"
+  },
+  {
+    "business_id": "bus_H4ekzPSlcg",
+    "data": {
+      "addons": [],
+      "billing": {
+        "city": "New York",
+        "country": "US",
+        "state": "New York",
+        "street": "11th Main",
+        "zipcode": "08002"
+      },
+      "cancel_at_next_billing_date": false,
+      "cancelled_at": null,
+      "created_at": "2025-06-23T11:57:59.125145Z",
+      "currency": "USD",
+      "customer": {
+        "customer_id": "cus_8VbC6JDZzPEqfBPUdpj0K",
+        "email": "test@acme.com",
+        "metadata": {},
+        "name": "Test user",
+        "phone_number": null
+      },
+      "discount_cycles_remaining": 3,
+      "discount_id": null,
+      "expires_at": null,
+      "metadata": {},
+      "meters": [],
+      "next_billing_date": "2025-08-23T12:01:14.672875Z",
+      "on_demand": false,
+      "payload_type": "Subscription",
+      "payment_frequency_count": 1,
+      "payment_frequency_interval": "Month",
+      "payment_method_id": null,
+      "previous_billing_date": "2025-07-23T12:01:21.506021Z",
+      "product_id": "pdt_RUST4raxbl0Rfe4VQi1z",
+      "quantity": 1,
+      "recurring_pre_tax_amount": 1000,
+      "status": "active",
+      "subscription_id": "sub_7EeHq2ewQuadropD2ra",
+      "subscription_period_count": 10,
+      "subscription_period_interval": "Year",
+      "tax_id": "DE999999999",
+      "tax_inclusive": false,
+      "trial_period_days": 0
+    },
+    "timestamp": "2025-08-04T05:45:31.736731Z",
+    "type": "subscription.updated"
   }
-}
+]
