@@ -377,9 +377,13 @@ function Library() {
                       {book.title}
                     </h2>
                     <div className="text-xs text-gray-600 space-y-0.5">
-                      {book.total_pages && (
+                      {book.total_pages > 0 && book.current_page > 1 ? (
+                        <p className="text-gray-500">
+                          {book.current_page}/{book.total_pages} pages read ({Math.round((book.current_page / book.total_pages) * 100)}%)
+                        </p>
+                      ) : book.total_pages > 0 ? (
                         <p className="text-gray-500">{book.total_pages} pages</p>
-                      )}
+                      ) : null}
                       {lastReadAt ? (
                         <p className="text-gray-400">
                           Last read: {format(new Date(lastReadAt), 'MMM d, yyyy')}

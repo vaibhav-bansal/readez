@@ -1,0 +1,1268 @@
+{
+  "info": {
+    "name": "ReadEz API",
+    "_postman_id": "readez-api-collection",
+    "description": "Complete API collection for ReadEz — a PDF reader web app.\n\nAuthentication is cookie-based (readez_session). Log in via Google OAuth first, then Postman will carry the session cookie automatically.\n\nSet the `base_url` variable to your environment (default: http://localhost:8000).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "book_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the API server is running."
+          },
+          "response": [
+            {
+              "name": "Healthy",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/health",
+                  "host": ["{{base_url}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"healthy\",\n  \"environment\": \"development\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints using Google OAuth with cookie-based sessions.",
+      "item": [
+        {
+          "name": "Google OAuth Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google", "login"]
+            },
+            "description": "Returns a Google OAuth authorization URL. Open this in a browser to complete sign-in."
+          },
+          "response": [
+            {
+              "name": "Authorization URL",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/auth/google/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "google", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"authorization_url\": \"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=xxx&redirect_uri=http://localhost:8000/auth/google/callback&scope=openid+email+profile&state=abc123&code_challenge=xyz&code_challenge_method=S256\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/callback?code=4/0abc123&state=xyz789",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google", "callback"],
+              "query": [
+                { "key": "code", "value": "4/0abc123", "description": "Authorization code from Google" },
+                { "key": "state", "value": "xyz789", "description": "CSRF state token" }
+              ]
+            },
+            "description": "Google redirects here after user consents. Exchanges code for tokens, creates/finds user, sets session cookie. Returns HTML that posts a message to the opener window."
+          },
+          "response": [
+            {
+              "name": "Success (HTML)",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/auth/google/callback?code=4/0abc123&state=xyz789",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "google", "callback"],
+                  "query": [
+                    { "key": "code", "value": "4/0abc123" },
+                    { "key": "state", "value": "xyz789" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "text/html" },
+                { "key": "Set-Cookie", "value": "readez_session=sess_abc123; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000" }
+              ],
+              "body": "<html><body><script>window.opener.postMessage({type:'OAUTH_SUCCESS',user:{id:'...',email:'user@example.com'}}, '*'); window.close();</script></body></html>"
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get the currently authenticated user's profile. Requires session cookie."
+          },
+          "response": [
+            {
+              "name": "Authenticated User",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"email\": \"user@example.com\",\n  \"name\": \"John Doe\",\n  \"avatar_url\": \"https://lh3.googleusercontent.com/a/photo\",\n  \"created_at\": \"2026-03-15T10:30:00\"\n}"
+            },
+            {
+              "name": "Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "me"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"Not authenticated\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Auth Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/status",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "status"]
+            },
+            "description": "Check whether the current session is authenticated. Does not require auth — returns a boolean."
+          },
+          "response": [
+            {
+              "name": "Authenticated",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/auth/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"authenticated\": true,\n  \"user\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"email\": \"user@example.com\",\n    \"name\": \"John Doe\",\n    \"avatar_url\": \"https://lh3.googleusercontent.com/a/photo\",\n    \"created_at\": \"2026-03-15T10:30:00\"\n  }\n}"
+            },
+            {
+              "name": "Not Authenticated",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/auth/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"authenticated\": false,\n  \"user\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "End the current session. Deletes the session from the database and clears the cookie."
+          },
+          "response": [
+            {
+              "name": "Logged Out",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/auth/logout",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "logout"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" },
+                { "key": "Set-Cookie", "value": "readez_session=; Path=/; HttpOnly; Max-Age=0" }
+              ],
+              "body": "{\n  \"message\": \"Logged out successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "description": "CRUD operations for PDF books, thumbnails, signed URLs, and page count management.",
+      "item": [
+        {
+          "name": "List All Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books",
+              "host": ["{{base_url}}"],
+              "path": ["books"]
+            },
+            "description": "List all books for the authenticated user, ordered by last updated."
+          },
+          "response": [
+            {
+              "name": "Books List",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books",
+                  "host": ["{{base_url}}"],
+                  "path": ["books"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"books\": [\n    {\n      \"id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n      \"title\": \"The Accidental CTO Book\",\n      \"file_name\": \"the-accidental-cto.pdf\",\n      \"file_size\": 5242880,\n      \"total_pages\": 342,\n      \"thumbnail_url\": \"/books/f47ac10b-58cc-4372-a567-0e02b2c3d479/thumbnail\",\n      \"created_at\": \"2026-04-03T08:15:00\",\n      \"updated_at\": \"2026-04-03T09:30:00\"\n    }\n  ],\n  \"total\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}"]
+            },
+            "description": "Get a specific book by its UUID."
+          },
+          "response": [
+            {
+              "name": "Book Found",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"title\": \"The Accidental CTO Book\",\n  \"file_name\": \"the-accidental-cto.pdf\",\n  \"file_size\": 5242880,\n  \"total_pages\": 342,\n  \"thumbnail_url\": \"/books/f47ac10b-58cc-4372-a567-0e02b2c3d479/thumbnail\",\n  \"created_at\": \"2026-04-03T08:15:00\",\n  \"updated_at\": \"2026-04-03T09:30:00\"\n}"
+            },
+            {
+              "name": "Book Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/00000000-0000-0000-0000-000000000000",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "00000000-0000-0000-0000-000000000000"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"Book not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Book (PDF)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "PDF file to upload (max 100MB)"
+                },
+                {
+                  "key": "title",
+                  "value": "My Book Title",
+                  "type": "text",
+                  "description": "Optional title. Defaults to filename without extension.",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/books",
+              "host": ["{{base_url}}"],
+              "path": ["books"]
+            },
+            "description": "Upload a new PDF book. Page count is automatically extracted from the PDF."
+          },
+          "response": [
+            {
+              "name": "Book Uploaded",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/books",
+                  "host": ["{{base_url}}"],
+                  "path": ["books"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"title\": \"The Accidental CTO Book\",\n  \"file_name\": \"the-accidental-cto.pdf\",\n  \"file_size\": 5242880,\n  \"total_pages\": 342,\n  \"thumbnail_url\": null,\n  \"created_at\": \"2026-04-03T08:15:00\",\n  \"updated_at\": \"2026-04-03T08:15:00\"\n}"
+            },
+            {
+              "name": "Invalid File Type",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/books",
+                  "host": ["{{base_url}}"],
+                  "path": ["books"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"Only PDF files are allowed\"\n}"
+            },
+            {
+              "name": "File Too Large",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/books",
+                  "host": ["{{base_url}}"],
+                  "path": ["books"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"File size exceeds 100MB limit\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}"]
+            },
+            "description": "Delete a book and all associated files (PDF, thumbnail) and reading progress."
+          },
+          "response": [
+            {
+              "name": "Book Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"message\": \"Book deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Thumbnail",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Thumbnail image file (JPEG recommended)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}/thumbnail",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}", "thumbnail"]
+            },
+            "description": "Upload or replace the thumbnail image for a book."
+          },
+          "response": [
+            {
+              "name": "Thumbnail Uploaded",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/thumbnail",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "thumbnail"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"title\": \"The Accidental CTO Book\",\n  \"file_name\": \"the-accidental-cto.pdf\",\n  \"file_size\": 5242880,\n  \"total_pages\": 342,\n  \"thumbnail_url\": \"/books/f47ac10b-58cc-4372-a567-0e02b2c3d479/thumbnail\",\n  \"created_at\": \"2026-04-03T08:15:00\",\n  \"updated_at\": \"2026-04-03T09:30:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Thumbnail Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}/thumbnail",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}", "thumbnail"]
+            },
+            "description": "Get the thumbnail image for a book. No authentication required — thumbnails are public."
+          },
+          "response": [
+            {
+              "name": "Thumbnail Image",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/thumbnail",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "thumbnail"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "image/jpeg" },
+                { "key": "Cache-Control", "value": "public, max-age=86400" }
+              ],
+              "body": "(binary image data)"
+            },
+            {
+              "name": "No Thumbnail",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/thumbnail",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "thumbnail"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"Thumbnail not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Signed URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}/signed-url",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}", "signed-url"]
+            },
+            "description": "Generate a time-limited signed URL for accessing the book's PDF file. Valid for 1 hour."
+          },
+          "response": [
+            {
+              "name": "Signed URL Generated",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/signed-url",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "signed-url"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"signed_url\": \"/books/f47ac10b-58cc-4372-a567-0e02b2c3d479/data?expires=1743700000&sig=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4\",\n  \"expires_at\": \"2026-04-03T11:15:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Book Data (Base64)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}/data?expires=1743700000&sig=a1b2c3d4e5f6",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}", "data"],
+              "query": [
+                { "key": "expires", "value": "1743700000", "description": "Expiration timestamp from signed URL" },
+                { "key": "sig", "value": "a1b2c3d4e5f6", "description": "Signature from signed URL" }
+              ]
+            },
+            "description": "Get the PDF file as base64-encoded JSON. Uses signed URL auth (no session cookie needed). Bypasses download interceptors like IDM."
+          },
+          "response": [
+            {
+              "name": "Book Data",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/data?expires=1743700000&sig=a1b2c3d4e5f6",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "data"],
+                  "query": [
+                    { "key": "expires", "value": "1743700000" },
+                    { "key": "sig", "value": "a1b2c3d4e5f6" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"data\": \"JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZy...\",\n  \"mime_type\": \"application/pdf\",\n  \"file_name\": \"the-accidental-cto.pdf\"\n}"
+            },
+            {
+              "name": "Invalid Signature",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/data?expires=1000000000&sig=invalid",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "data"],
+                  "query": [
+                    { "key": "expires", "value": "1000000000" },
+                    { "key": "sig", "value": "invalid" }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"Invalid or expired signed URL\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Book File (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}/file?expires=1743700000&sig=a1b2c3d4e5f6",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}", "file"],
+              "query": [
+                { "key": "expires", "value": "1743700000", "description": "Expiration timestamp from signed URL" },
+                { "key": "sig", "value": "a1b2c3d4e5f6", "description": "Signature from signed URL" }
+              ]
+            },
+            "description": "Serve the raw PDF file using signed URL authentication."
+          },
+          "response": [
+            {
+              "name": "PDF File",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/file?expires=1743700000&sig=a1b2c3d4e5f6",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "file"],
+                  "query": [
+                    { "key": "expires", "value": "1743700000" },
+                    { "key": "sig", "value": "a1b2c3d4e5f6" }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/pdf" },
+                { "key": "Content-Disposition", "value": "inline; filename=\"the-accidental-cto.pdf\"" },
+                { "key": "Cache-Control", "value": "private, max-age=3600" }
+              ],
+              "body": "(binary PDF data)"
+            }
+          ]
+        },
+        {
+          "name": "Update Page Count (Lazy Backfill)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"total_pages\": 342\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/books/{{book_id}}/page-count",
+              "host": ["{{base_url}}"],
+              "path": ["books", "{{book_id}}", "page-count"]
+            },
+            "description": "Update the page count for a book. Used by the frontend reader as a lazy backfill — only updates if total_pages is currently null or zero."
+          },
+          "response": [
+            {
+              "name": "Page Count Updated",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/page-count",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "page-count"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"total_pages\": 342\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"total_pages\": 342\n}"
+            },
+            {
+              "name": "Invalid Page Count",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": {
+                  "raw": "{{base_url}}/books/{{book_id}}/page-count",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "{{book_id}}", "page-count"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"total_pages\": -1\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"detail\": \"total_pages must be a positive integer\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Backfill All Page Counts",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/books/backfill/page-counts",
+              "host": ["{{base_url}}"],
+              "path": ["books", "backfill", "page-counts"]
+            },
+            "description": "Backfill page counts for all books belonging to the current user where total_pages is null or zero. Reads each PDF from storage and extracts the real page count."
+          },
+          "response": [
+            {
+              "name": "Backfill Complete",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/books/backfill/page-counts",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "backfill", "page-counts"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"total_found\": 5,\n  \"updated\": 4,\n  \"errors\": [\n    {\n      \"book_id\": \"00000000-0000-0000-0000-000000000001\",\n      \"title\": \"Corrupted Book\",\n      \"error\": \"EOF marker not found\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "No Books to Backfill",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/books/backfill/page-counts",
+                  "host": ["{{base_url}}"],
+                  "path": ["books", "backfill", "page-counts"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"total_found\": 0,\n  \"updated\": 0,\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reading Progress",
+      "description": "Track and restore reading position, zoom level, and scroll position per book.",
+      "item": [
+        {
+          "name": "List All Progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/progress",
+              "host": ["{{base_url}}"],
+              "path": ["progress"]
+            },
+            "description": "List reading progress for all books, ordered by last read."
+          },
+          "response": [
+            {
+              "name": "Progress List",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/progress",
+                  "host": ["{{base_url}}"],
+                  "path": ["progress"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"progress\": [\n    {\n      \"id\": \"b1c2d3e4-f5a6-7890-bcde-f12345678901\",\n      \"book_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n      \"current_page\": 47,\n      \"scroll_position\": 1200,\n      \"zoom_level\": 150,\n      \"last_read_at\": \"2026-04-03T09:30:00\",\n      \"updated_at\": \"2026-04-03T09:30:00\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Progress for Book",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/progress/{{book_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["progress", "{{book_id}}"]
+            },
+            "description": "Get reading progress for a specific book."
+          },
+          "response": [
+            {
+              "name": "Progress Found",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/progress/{{book_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["progress", "{{book_id}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"b1c2d3e4-f5a6-7890-bcde-f12345678901\",\n  \"book_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"current_page\": 47,\n  \"scroll_position\": 1200,\n  \"zoom_level\": 150,\n  \"last_read_at\": \"2026-04-03T09:30:00\",\n  \"updated_at\": \"2026-04-03T09:30:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Reading Progress",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_page\": 47,\n  \"scroll_position\": 1200,\n  \"zoom_level\": 150\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/progress/{{book_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["progress", "{{book_id}}"]
+            },
+            "description": "Update reading progress for a book. Creates the progress record if it doesn't exist. All fields are optional — only send what changed."
+          },
+          "response": [
+            {
+              "name": "Progress Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/progress/{{book_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["progress", "{{book_id}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"current_page\": 47,\n  \"scroll_position\": 1200,\n  \"zoom_level\": 150\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"b1c2d3e4-f5a6-7890-bcde-f12345678901\",\n  \"book_id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"current_page\": 47,\n  \"scroll_position\": 1200,\n  \"zoom_level\": 150,\n  \"last_read_at\": \"2026-04-03T09:30:00\",\n  \"updated_at\": \"2026-04-03T09:30:00\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subscription",
+      "description": "Subscription tier and feature usage tracking.",
+      "item": [
+        {
+          "name": "Get Subscription & Usage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subscription",
+              "host": ["{{base_url}}"],
+              "path": ["subscription"]
+            },
+            "description": "Get the user's subscription details, feature usage, and payment history."
+          },
+          "response": [
+            {
+              "name": "Free Tier User",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/subscription",
+                  "host": ["{{base_url}}"],
+                  "path": ["subscription"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"subscription\": {\n    \"id\": \"c2d3e4f5-a6b7-8901-cdef-234567890123\",\n    \"tier\": \"free\",\n    \"status\": \"active\",\n    \"dodo_subscription_id\": null,\n    \"dodo_customer_id\": null,\n    \"current_period_start\": null,\n    \"current_period_end\": null,\n    \"cancel_at_period_end\": false,\n    \"created_at\": \"2026-03-15T10:30:00\"\n  },\n  \"usage\": [\n    {\n      \"feature\": \"storage_bytes\",\n      \"usage_count\": 5242880,\n      \"limit\": 104857600,\n      \"reset_at\": null\n    },\n    {\n      \"feature\": \"books\",\n      \"usage_count\": 1,\n      \"limit\": 10,\n      \"reset_at\": null\n    },\n    {\n      \"feature\": \"ai_summaries\",\n      \"usage_count\": 0,\n      \"limit\": 3,\n      \"reset_at\": null\n    }\n  ],\n  \"payments\": []\n}"
+            },
+            {
+              "name": "Pro Tier User",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/subscription",
+                  "host": ["{{base_url}}"],
+                  "path": ["subscription"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"subscription\": {\n    \"id\": \"c2d3e4f5-a6b7-8901-cdef-234567890123\",\n    \"tier\": \"pro\",\n    \"status\": \"active\",\n    \"dodo_subscription_id\": \"sub_abc123\",\n    \"dodo_customer_id\": \"cus_xyz789\",\n    \"current_period_start\": \"2026-04-01T00:00:00\",\n    \"current_period_end\": \"2026-05-01T00:00:00\",\n    \"cancel_at_period_end\": false,\n    \"created_at\": \"2026-03-15T10:30:00\"\n  },\n  \"usage\": [\n    {\n      \"feature\": \"storage_bytes\",\n      \"usage_count\": 52428800,\n      \"limit\": 5368709120,\n      \"reset_at\": null\n    },\n    {\n      \"feature\": \"books\",\n      \"usage_count\": 15,\n      \"limit\": null,\n      \"reset_at\": null\n    },\n    {\n      \"feature\": \"ai_summaries\",\n      \"usage_count\": 8,\n      \"limit\": null,\n      \"reset_at\": null\n    }\n  ],\n  \"payments\": [\n    {\n      \"id\": \"d3e4f5a6-b7c8-9012-def0-345678901234\",\n      \"dodo_payment_id\": \"pay_abc123\",\n      \"dodo_invoice_id\": \"inv_xyz789\",\n      \"dodo_refund_id\": null,\n      \"amount\": 999,\n      \"currency\": \"USD\",\n      \"status\": \"succeeded\",\n      \"paid_at\": \"2026-04-01T00:00:00\",\n      \"refund_amount\": null,\n      \"refunded_at\": null,\n      \"created_at\": \"2026-04-01T00:00:00\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Usage Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subscription/usage",
+              "host": ["{{base_url}}"],
+              "path": ["subscription", "usage"]
+            },
+            "description": "Get only the feature usage (storage, books, AI summaries) without subscription details."
+          },
+          "response": [
+            {
+              "name": "Usage Data",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/subscription/usage",
+                  "host": ["{{base_url}}"],
+                  "path": ["subscription", "usage"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "[\n  {\n    \"feature\": \"storage_bytes\",\n    \"usage_count\": 5242880,\n    \"limit\": 104857600,\n    \"reset_at\": null\n  },\n  {\n    \"feature\": \"books\",\n    \"usage_count\": 1,\n    \"limit\": 10,\n    \"reset_at\": null\n  },\n  {\n    \"feature\": \"ai_summaries\",\n    \"usage_count\": 0,\n    \"limit\": 3,\n    \"reset_at\": null\n  }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "description": "Payment and checkout session management via Dodo Payments.",
+      "item": [
+        {
+          "name": "Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": \"pro\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "checkout"]
+            },
+            "description": "Create a Dodo Payments checkout session for upgrading to Pro or Plus tier."
+          },
+          "response": [
+            {
+              "name": "Checkout URL Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/payments/checkout",
+                  "host": ["{{base_url}}"],
+                  "path": ["payments", "checkout"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tier\": \"pro\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"checkout_url\": \"https://checkout.dodopayments.com/session/cs_abc123xyz789\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feedback",
+      "description": "User feedback submission and listing.",
+      "item": [
+        {
+          "name": "Submit Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"feature\",\n  \"subject\": \"Dark mode support\",\n  \"description\": \"Would love a dark mode option for nighttime reading.\",\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feedback",
+              "host": ["{{base_url}}"],
+              "path": ["feedback"]
+            },
+            "description": "Submit feedback. Works for both authenticated and anonymous users. Email is auto-filled if authenticated."
+          },
+          "response": [
+            {
+              "name": "Feedback Submitted",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/feedback",
+                  "host": ["{{base_url}}"],
+                  "path": ["feedback"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"category\": \"feature\",\n  \"subject\": \"Dark mode support\",\n  \"description\": \"Would love a dark mode option for nighttime reading.\",\n  \"email\": \"user@example.com\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"id\": \"e4f5a6b7-c8d9-0123-ef01-456789012345\",\n  \"category\": \"feature\",\n  \"subject\": \"Dark mode support\",\n  \"description\": \"Would love a dark mode option for nighttime reading.\",\n  \"status\": \"new\",\n  \"created_at\": \"2026-04-03T10:00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List My Feedback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feedback",
+              "host": ["{{base_url}}"],
+              "path": ["feedback"]
+            },
+            "description": "List all feedback submitted by the current user, ordered by most recent."
+          },
+          "response": [
+            {
+              "name": "Feedback List",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/feedback",
+                  "host": ["{{base_url}}"],
+                  "path": ["feedback"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "[\n  {\n    \"id\": \"e4f5a6b7-c8d9-0123-ef01-456789012345\",\n    \"category\": \"feature\",\n    \"subject\": \"Dark mode support\",\n    \"description\": \"Would love a dark mode option for nighttime reading.\",\n    \"status\": \"new\",\n    \"created_at\": \"2026-04-03T10:00:00\"\n  }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "description": "Dodo Payments webhook endpoints. These are called by Dodo's servers, not by the client. Included here for testing with signature verification.",
+      "item": [
+        {
+          "name": "Subscription Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "webhook-id", "value": "msg_abc123", "description": "Unique webhook message ID" },
+              { "key": "webhook-timestamp", "value": "1743700000", "description": "Unix timestamp of webhook" },
+              { "key": "webhook-signature", "value": "v1,signature_here", "description": "HMAC-SHA256 signature" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"subscription.active\",\n  \"data\": {\n    \"subscription_id\": \"sub_abc123\",\n    \"customer\": {\n      \"customer_id\": \"cus_xyz789\"\n    },\n    \"status\": \"active\",\n    \"current_period_start\": \"2026-04-01T00:00:00Z\",\n    \"current_period_end\": \"2026-05-01T00:00:00Z\",\n    \"metadata\": {\n      \"user_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"tier\": \"pro\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhooks/subscription",
+              "host": ["{{base_url}}"],
+              "path": ["webhooks", "subscription"]
+            },
+            "description": "Handle subscription lifecycle events from Dodo Payments. Requires Standard Webhooks signature verification."
+          },
+          "response": [
+            {
+              "name": "Webhook Processed",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/webhooks/subscription",
+                  "host": ["{{base_url}}"],
+                  "path": ["webhooks", "subscription"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Payment Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "webhook-id", "value": "msg_def456", "description": "Unique webhook message ID" },
+              { "key": "webhook-timestamp", "value": "1743700000", "description": "Unix timestamp of webhook" },
+              { "key": "webhook-signature", "value": "v1,signature_here", "description": "HMAC-SHA256 signature" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"payment.succeeded\",\n  \"data\": {\n    \"payment_id\": \"pay_abc123\",\n    \"subscription_id\": \"sub_abc123\",\n    \"customer\": {\n      \"customer_id\": \"cus_xyz789\"\n    },\n    \"amount\": 999,\n    \"currency\": \"USD\",\n    \"status\": \"succeeded\",\n    \"created_at\": \"2026-04-01T00:00:00Z\",\n    \"metadata\": {\n      \"user_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhooks/payment",
+              "host": ["{{base_url}}"],
+              "path": ["webhooks", "payment"]
+            },
+            "description": "Handle payment events from Dodo Payments. Records payment in the database."
+          },
+          "response": [
+            {
+              "name": "Payment Processed",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/webhooks/payment",
+                  "host": ["{{base_url}}"],
+                  "path": ["webhooks", "payment"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refund Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "webhook-id", "value": "msg_ghi789", "description": "Unique webhook message ID" },
+              { "key": "webhook-timestamp", "value": "1743700000", "description": "Unix timestamp of webhook" },
+              { "key": "webhook-signature", "value": "v1,signature_here", "description": "HMAC-SHA256 signature" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"refund.succeeded\",\n  \"data\": {\n    \"refund_id\": \"ref_abc123\",\n    \"payment_id\": \"pay_abc123\",\n    \"amount\": 999,\n    \"currency\": \"USD\",\n    \"status\": \"succeeded\",\n    \"created_at\": \"2026-04-03T12:00:00Z\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhooks/refund",
+              "host": ["{{base_url}}"],
+              "path": ["webhooks", "refund"]
+            },
+            "description": "Handle refund events from Dodo Payments. Updates payment status and cancels subscription."
+          },
+          "response": [
+            {
+              "name": "Refund Processed",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/webhooks/refund",
+                  "host": ["{{base_url}}"],
+                  "path": ["webhooks", "refund"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
