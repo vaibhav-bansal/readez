@@ -180,6 +180,16 @@ export const books = {
   },
 
   /**
+   * Update page count for a book (lazy backfill from reader).
+   */
+  async updatePageCount(bookId, totalPages) {
+    return apiRequest(`/books/${bookId}/page-count`, {
+      method: 'PATCH',
+      body: JSON.stringify({ total_pages: totalPages }),
+    });
+  },
+
+  /**
    * Get a signed URL for accessing the PDF.
    */
   async getSignedUrl(bookId) {

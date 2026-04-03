@@ -6,7 +6,7 @@ import { pdfWorkerSrc } from '../lib/pdfWorker'
 import { Document, Page, pdfjs } from 'react-pdf'
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
-import api, { API_BASE_URL } from '../lib/api'
+import api, { API_BASE_URL, books } from '../lib/api'
 import toast from 'react-hot-toast'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
@@ -313,6 +313,9 @@ function Reader() {
 
   const onDocumentLoadSuccess = ({ numPages: totalPages }) => {
     setNumPages(totalPages)
+
+    // Lazy backfill: send page count to backend if not already set
+    books.updatePageCount(bookId, totalPages).catch(() => {})
 
     // Track PDF loaded
     trackEvent('pdf_loaded', {

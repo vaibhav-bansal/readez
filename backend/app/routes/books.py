@@ -2,12 +2,14 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 import uuid
 import io
+
+from pypdf import PdfReader
 
 from app.database import get_db
 from app.models import User, Book, ReadingProgress
@@ -174,6 +176,14 @@ async def upload_book(
             detail=f"Failed to save file: {type(e).__name__}: {e}",
         )
 
+    # Extract page count from PDF
+    total_pages = 0
+    try:
+        pdf_reader = PdfReader(io.BytesIO(content))
+        total_pages = len(pdf_reader.pages)
+    except Exception as e:
+        logger.warning(f"Failed to extract page count from PDF: {e}")
+
     # Create book record
     try:
         book_title = title or file.filename.rsplit(".", 1)[0]
@@ -183,7 +193,7 @@ async def upload_book(
             file_name=file.filename,
             file_path=relative_path,
             file_size=file_size,
-            total_pages=0,
+            total_pages=total_pages,
         )
         db.add(book)
         await db.flush()
@@ -514,3 +524,87 @@ async def get_file(
             "Cache-Control": "private, max-age=3600",  # 1 hour cache
         },
     )
+
+
+@router.patch("/{book_id}/page-count")
+async def update_page_count(
+    book_id: str,
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update the page count for a book (lazy backfill from the frontend reader).
+    Only updates if total_pages is currently null or zero.
+    """
+    total_pages = body.get("total_pages")
+    if not total_pages or not isinstance(total_pages, int) or total_pages <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="total_pages must be a positive integer",
+        )
+
+    try:
+        book_uuid = uuid.UUID(book_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid book ID",
+        )
+
+    result = await db.execute(
+        select(Book).where(Book.id == book_uuid, Book.user_id == user.id)
+    )
+    book = result.scalar_one_or_none()
+
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found",
+        )
+
+    # Only update if not already set
+    if not book.total_pages:
+        book.total_pages = total_pages
+        await db.commit()
+
+    return {"total_pages": book.total_pages}
+
+
+@router.post("/backfill/page-counts")
+async def backfill_page_counts(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Backfill page counts for all books belonging to the current user
+    where total_pages is null or zero.
+    """
+    result = await db.execute(
+        select(Book).where(
+            Book.user_id == user.id,
+            or_(Book.total_pages == None, Book.total_pages == 0),
+        )
+    )
+    books = result.scalars().all()
+
+    updated = 0
+    errors = []
+
+    for book in books:
+        try:
+            content = await storage_service.read_file(book.file_path)
+            pdf_reader = PdfReader(io.BytesIO(content))
+            book.total_pages = len(pdf_reader.pages)
+            updated += 1
+        except Exception as e:
+            logger.error(f"Failed to extract page count for book {book.id}: {e}")
+            errors.append({"book_id": str(book.id), "title": book.title, "error": str(e)})
+
+    await db.commit()
+
+    return {
+        "total_found": len(books),
+        "updated": updated,
+        "errors": errors,
+    }
