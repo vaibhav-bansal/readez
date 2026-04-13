@@ -120,9 +120,11 @@ function Landing() {
             <a href="#readez-in-action" onClick={() => trackEvent('landing_section_scrolled', { section: 'readez-in-action' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
               ReadEz in Action
             </a>
-            <a href="#pricing" onClick={() => trackEvent('landing_section_scrolled', { section: 'pricing' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
-              Pricing
-            </a>
+            {false && (
+              <a href="#pricing" onClick={() => trackEvent('landing_section_scrolled', { section: 'pricing' })} className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
+                Pricing
+              </a>
+            )}
             {isAuthenticated && (
               <Link to="/library" className="text-gray-700 hover:text-blue-600 transition-colors font-medium cursor-pointer">
                 Library
@@ -335,6 +337,7 @@ function Landing() {
       </section>
 
       {/* Pricing Section */}
+      {false && (
       <section id="pricing" className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -517,6 +520,7 @@ function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA Section */}
       <section className="bg-blue-600 py-16">

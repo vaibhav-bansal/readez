@@ -116,7 +116,8 @@ if STATIC_DIR.exists():
         response = await call_next(request)
         logger.info(f"Response status: {response.status_code}")
 
-        # If the response is 404 and it's not an API route, serve the SPA
+        # If the response is 404 and it's not an API route, try serving a
+        # real static file first, then fall back to the SPA index.html
         if response.status_code == 404:
             # Skip API routes and health check
             api_prefixes = ["/health", "/auth", "/books", "/progress", "/subscription", "/payments", "/feedback", "/webhooks", "/assets"]
@@ -124,6 +125,22 @@ if STATIC_DIR.exists():
             logger.info(f"Is API route: {is_api_route}")
 
             if not is_api_route:
+                # Try to serve the requested path as a real file from the
+                # static directory (e.g. /screenshots/library.png, /robots.txt,
+                # /sitemap.xml, /book-icon.svg). This is needed because only
+                # /assets is mounted as StaticFiles above.
+                safe_path = path.lstrip("/")
+                if safe_path:
+                    static_root = STATIC_DIR.resolve()
+                    requested_file = (STATIC_DIR / safe_path).resolve()
+                    try:
+                        requested_file.relative_to(static_root)
+                        if requested_file.is_file():
+                            logger.info(f"Serving static file for path: {path}")
+                            return FileResponse(str(requested_file))
+                    except ValueError:
+                        logger.warning(f"Rejected path traversal attempt: {path}")
+
                 index_path = STATIC_DIR / "index.html"
                 if index_path.exists():
                     logger.info(f"Serving SPA index.html for path: {path}")
