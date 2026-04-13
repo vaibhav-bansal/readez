@@ -36,3 +36,4 @@ __pycache__/
 
 # Storage (user-uploaded books and thumbnails)
 backend/storage/
+.gstack/

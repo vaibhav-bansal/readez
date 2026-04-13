@@ -247,7 +247,7 @@ function Library() {
         {/* Header with title and subscription badge */}
         <div className="flex items-center gap-3 mb-8">
           <h1 className="text-3xl font-bold">My Library</h1>
-          {!subscriptionLoading && <SubscriptionBadge tier={tier} />}
+          {false && !subscriptionLoading && <SubscriptionBadge tier={tier} />}
         </div>
 
         {/* Upload area */}

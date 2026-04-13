@@ -226,7 +226,7 @@ function Auth({ children }) {
       {isLibraryPage && (
         <div className="absolute top-4 right-4 flex items-center gap-3 z-50">
           {/* Upgrade Button - Only show for free tier */}
-          {tier === 'free' && (
+          {false && tier === 'free' && (
             <Link
               to="/#pricing"
               onClick={() => trackEvent('upgrade_button_clicked', { location: 'header' })}
